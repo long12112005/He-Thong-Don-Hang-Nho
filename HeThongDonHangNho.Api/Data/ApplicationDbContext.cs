@@ -8,9 +8,10 @@ namespace HeThongDonHangNho.Api.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
+            
         }
 
         public DbSet<Product> Products { get; set; } = null!;
-        // Sau này thêm: Customers, Orders, OrderDetails...
+        public DbSet<Customer> Customers { get; set; }= null!;
     }
 }
