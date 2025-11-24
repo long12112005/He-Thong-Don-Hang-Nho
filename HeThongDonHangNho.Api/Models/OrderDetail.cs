@@ -1,3 +1,6 @@
+namespace HeThongDonHangNho.Api.Models
+
+
 public class OrderDetail {
 public int Id { get; set; }
 public int OrderId { get; set; }

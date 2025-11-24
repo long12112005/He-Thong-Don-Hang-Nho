@@ -1,5 +1,6 @@
 using HeThongDonHangNho.Api.Data;
 using HeThongDonHangNho.Api.Models;
+using HeThongDonHangNho.Api.Dtos.Customers;   
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,40 +17,63 @@ namespace HeThongDonHangNho.Api.Controllers
             _context = context;
         }
 
-
+        // GET: api/customers
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers()
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {
-            return await _context.Customers.ToListAsync();
+            var customers = await _context.Customers.ToListAsync();
+
+            // Entity -> DTO
+            var result = customers.Select(ToCustomerDto).ToList();
+
+            return Ok(result);
         }
 
+        // GET: api/customers/5
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<Customer>> GetCustomer(int id)
+        public async Task<ActionResult<CustomerDto>> GetCustomer(int id)
         {
             var customer = await _context.Customers.FindAsync(id);
 
             if (customer == null)
                 return NotFound();
 
-            return customer;
+            var dto = ToCustomerDto(customer);
+
+            return Ok(dto);
         }
 
+        // POST: api/customers
         [HttpPost]
-        public async Task<ActionResult<Customer>> CreateCustomer(Customer customer)
+        public async Task<ActionResult<CustomerDto>> CreateCustomer(CreateCustomerDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            // DTO -> Entity
+            var customer = ToCustomerEntity(dto);
+
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, customer);
+            var result = ToCustomerDto(customer);
+
+            return CreatedAtAction(nameof(GetCustomer), new { id = customer.Id }, result);
         }
 
+        // PUT: api/customers/5
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateCustomer(int id, Customer customer)
+        public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerDto dto)
         {
-            if (id != customer.Id)
-                return BadRequest();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            _context.Entry(customer).State = EntityState.Modified;
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+                return NotFound();
+
+            // DTO -> Entity (update)
+            UpdateCustomerEntity(customer, dto);
 
             try
             {
@@ -66,6 +90,7 @@ namespace HeThongDonHangNho.Api.Controllers
             return NoContent();
         }
 
+        // DELETE: api/customers/5
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteCustomer(int id)
         {
@@ -82,6 +107,36 @@ namespace HeThongDonHangNho.Api.Controllers
         private bool CustomerExists(int id)
         {
             return _context.Customers.Any(e => e.Id == id);
+        }
+
+       
+
+        private static CustomerDto ToCustomerDto(Customer c)
+        {
+            return new CustomerDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Phone = c.Phone,
+                Address = c.Address
+            };
+        }
+
+        private static Customer ToCustomerEntity(CreateCustomerDto dto)
+        {
+            return new Customer
+            {
+                Name = dto.Name,
+                Phone = dto.Phone,
+                Address = dto.Address
+            };
+        }
+
+        private static void UpdateCustomerEntity(Customer entity, UpdateCustomerDto dto)
+        {
+            entity.Name = dto.Name;
+            entity.Phone = dto.Phone;
+            entity.Address = dto.Address;
         }
     }
 }
