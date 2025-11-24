@@ -1,62 +1,116 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using HeThongDonHangNho.Api.Data;
+using HeThongDonHangNho.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using HeThongDonHangNho.Api.Services;
-using HeThongDonHangNho.Api.DTOs.Orders;
+using Microsoft.EntityFrameworkCore;
 
-
-namespace HeThongDonHangNho.Api.Controllers {
+namespace HeThongDonHangNho.Api.Controllers
+{
     [ApiController]
     [Route("api/[controller]")]
-    public class OrdersController : ControllerBase {
-        private readonly IOrderService _orderService;
-        public OrdersController(IOrderService orderService) {
-        _orderService = orderService;
+    [Authorize] // tất cả API order yêu cầu đăng nhập
+    public class OrdersController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public OrdersController(ApplicationDbContext context)
+        {
+            _context = context;
         }
 
-
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> Create([FromBody] CreateOrderDto dto) {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            int? userId = userIdClaim != null ? int.Parse(userIdClaim) : (int?)null;
-            try {
-                var order = await _orderService.CreateOrderAsync(dto, userId);
-                return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
-            }
-            catch (BadHttpRequestException ex) {
-                return BadRequest(new { success = false, errors = new[] { ex.Message } });
-            }
-        }
-
-
+        // ================== LẤY DANH SÁCH ORDER ==================
+        // Chỉ Admin mới được xem tất cả đơn
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetAll(int page = 1, int pageSize = 20) {
-            var list = await _orderService.GetAllAsync(page, pageSize);
-            return Ok(new { success = true, data = list });
+        public async Task<ActionResult<IEnumerable<Order>>> GetAll()
+        {
+            var orders = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .ToListAsync();
+
+            return Ok(orders);
         }
 
+        // ================== LẤY CHI TIẾT MỘT ORDER ==================
+        // GET: api/orders/5
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<Order>> GetById(int id)
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == id);
 
-        [HttpGet("{id}")]
-        [Authorize]
-        public async Task<IActionResult> GetById(int id) {
-            var order = await _orderService.GetByIdWithDetailsAsync(id);
-            if (order == null) return NotFound(new { success = false, message = "Order not found" });
+            if (order == null)
+                return NotFound();
 
+            return Ok(order);
+        }
 
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            if (role != "Admin") {
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (userIdClaim == null) return Forbid();
-                int userId = int.Parse(userIdClaim);
-                // If service returns UserId in DTO, compare. Here we re-query db for policy simplicity
-                // Alternatively, expose order.UserId in DTO or make another service method.
-                // For simplicity assume owner check done elsewhere; if not, do manual check here by reloading order entity.
-                }
+        // ================== TẠO ĐƠN HÀNG MỚI ==================
+        // POST: api/orders
+        [HttpPost]
+        public async Task<ActionResult<Order>> Create(Order order)
+        {
+            // Tính TotalAmount nếu có OrderDetails gửi lên
+            if (order.OrderDetails != null && order.OrderDetails.Count > 0)
+            {
+                order.TotalAmount = order.OrderDetails.Sum(od => od.Quantity * od.UnitPrice);
+            }
 
+            order.CreatedAt = DateTime.UtcNow;
+            order.UpdatedAt = null;
 
-            return Ok(new { success = true, data = order });
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+        }
+
+        // ================== CẬP NHẬT ĐƠN HÀNG ==================
+        // Chỉ Admin được update (ví dụ đổi trạng thái, địa chỉ...)
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Update(int id, Order updated)
+        {
+            if (id != updated.Id)
+                return BadRequest();
+
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+                return NotFound();
+
+            // Update các field cho phép
+            order.Status = updated.Status;
+            order.ShippingAddress = updated.ShippingAddress;
+            order.TotalAmount = updated.TotalAmount;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // ================== XÓA ĐƠN HÀNG ==================
+        // Chỉ Admin được xóa
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null)
+                return NotFound();
+
+            _context.Orders.Remove(order);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 }

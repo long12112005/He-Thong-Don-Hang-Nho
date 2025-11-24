@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HeThongDonHangNho.Api.Dtos.Products
 {
     public class UpdateProductDto

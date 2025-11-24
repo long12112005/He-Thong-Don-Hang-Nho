@@ -1,13 +1,15 @@
 using HeThongDonHangNho.Api.Data;
 using HeThongDonHangNho.Api.Models;
-using HeThongDonHangNho.Api.Dtos.Products;     // DTO cho Product
+using HeThongDonHangNho.Api.Dtos.Products;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;   
 
 namespace HeThongDonHangNho.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] 
     public class ProductsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -17,11 +19,12 @@ namespace HeThongDonHangNho.Api.Controllers
             _context = context;
         }
 
-        // GET: api/products
+        // ================== GET: api/products ==================
+        // Cho phép ai cũng xem danh sách sản phẩm
         [HttpGet]
+        [AllowAnonymous] // 👈 bỏ qua [Authorize] ở trên, không cần token
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
         {
-            // Chỉ lấy sản phẩm đang hoạt động
             var products = await _context.Products
                 .Where(p => p.IsActive)
                 .ToListAsync();
@@ -31,8 +34,10 @@ namespace HeThongDonHangNho.Api.Controllers
             return Ok(result);
         }
 
-        // GET: api/products/5
+        // ================== GET: api/products/5 ==================
+        // Cho phép ai cũng xem chi tiết 1 sản phẩm
         [HttpGet("{id:int}")]
+        [AllowAnonymous]
         public async Task<ActionResult<ProductDto>> GetById(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -43,8 +48,10 @@ namespace HeThongDonHangNho.Api.Controllers
             return Ok(dto);
         }
 
-        // POST: api/products
+        // ================== POST: api/products ==================
+        // 👇 Chỉ ADMIN mới được thêm sản phẩm
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ProductDto>> Create(CreateProductDto dto)
         {
             if (!ModelState.IsValid)
@@ -60,8 +67,10 @@ namespace HeThongDonHangNho.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = product.Id }, result);
         }
 
-        // PUT: api/products/5
+        // ================== PUT: api/products/5 ==================
+        // 👇 Chỉ ADMIN mới được sửa sản phẩm
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update(int id, UpdateProductDto dto)
         {
             if (!ModelState.IsValid)
@@ -89,9 +98,10 @@ namespace HeThongDonHangNho.Api.Controllers
             return NoContent();
         }
 
-        // DELETE: api/products/5
-        // Xóa mềm: chỉ set IsActive = false
+        // ================== DELETE: api/products/5 ==================
+        // 👇 Chỉ ADMIN mới được “xóa mềm” sản phẩm
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -104,7 +114,7 @@ namespace HeThongDonHangNho.Api.Controllers
             return NoContent();
         }
 
-
+        // ================== MAPPING ==================
 
         private static ProductDto ToProductDto(Product p)
         {

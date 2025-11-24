@@ -1,63 +1,94 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using HeThongDonHangNho.Api.Data;
+using HeThongDonHangNho.Api.Dtos.auth;
+using HeThongDonHangNho.Api.Dtos.Auth;
+using HeThongDonHangNho.Api.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
-
-namespace HeThongDonHangNho.Api.Controllers {
+namespace HeThongDonHangNho.Api.Controllers
+{
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase {
-        private readonly ApplicationDbContext _db;
+    public class AuthController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
         private readonly IConfiguration _config;
 
-
-        public AuthController(ApplicationDbContext db, IConfiguration config) {
-        _db = db;
-        _config = config;
+        public AuthController(ApplicationDbContext context, IConfiguration config)
+        {
+            _context = context;
+            _config = config;
         }
 
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
+        {
+            var exists = await _context.Users.AnyAsync(u => u.Email == dto.Email);
+            if (exists)
+                return BadRequest(new { message = "Email đã được sử dụng" });
+
+            var user = new User
+            {
+                Name = dto.Name,
+                Email = dto.Email,
+                Role = dto.Role
+            };
+            user.SetPassword(dto.Password);
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Tạo tài khoản thành công" });
+        }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest req) {
-            var user = _db.User.FirstOrDefault(u => u.Username == req.Username || u.Email == req.Username);
-            if (user == null) return Unauthorized(new { success = false, message = "Invalid credentials" });
-            if (!BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
-                return Unauthorized(new { success = false, message = "Invalid credentials" });
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null || !user.VerifyPassword(dto.Password))
+                return Unauthorized(new { message = "Email hoặc mật khẩu không đúng" });
 
+            var token = GenerateJwtToken(user);
 
-            var claims = new List<Claim> {
+            return Ok(new
+            {
+                token,
+                userId = user.Id,
+                name = user.Name,
+                email = user.Email,
+                role = user.Role
+            });
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var jwtSettings = _config.GetSection("Jwt");
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+            {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role ?? "User")
+                new Claim(ClaimTypes.Name, user.Name),
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.UtcNow.AddMinutes(int.Parse(_config["Jwt:ExpireMinutes"] ?? "60"));
-
-
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
                 claims: claims,
-                expires: expires,
+                expires: DateTime.UtcNow.AddHours(3),
                 signingCredentials: creds
             );
 
-
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            return Ok(new { success = true, token = tokenString, expires = expires });
-        }
-
-
-        public class LoginRequest {
-            public string Username { get; set; }
-            public string Password { get; set; }
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
