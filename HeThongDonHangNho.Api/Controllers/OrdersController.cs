@@ -1,12 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Claims;
 using HeThongDonHangNho.Api.Data;
 using HeThongDonHangNho.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HeThongDonHangNho.Api.DTOs;
 
 namespace HeThongDonHangNho.Api.Controllers
 {
@@ -22,23 +20,50 @@ namespace HeThongDonHangNho.Api.Controllers
             _context = context;
         }
 
-        // ================== LẤY DANH SÁCH ORDER ==================
-        // Chỉ Admin mới được xem tất cả đơn
+        private int GetCurrentUserId()
+        {
+            var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.Parse(id);
+        }
+
+        private bool IsAdmin => User.IsInRole("Admin");
+
+        // ================== LẤY DANH SÁCH ORDER (ADMIN) ==================
+        // GET: api/orders
         [HttpGet]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<IEnumerable<Order>>> GetAll()
+        public async Task<ActionResult<IEnumerable<OrderDto>>> GetAll()
         {
             var orders = await _context.Orders
                 .Include(o => o.OrderDetails)
                 .ToListAsync();
 
-            return Ok(orders);
+            var result = orders.Select(ToOrderDto).ToList();
+            return Ok(result);
+        }
+
+        // ================== LẤY ĐƠN CỦA CHÍNH USER ==================
+        // GET: api/orders/my
+        [HttpGet("my")]
+        [Authorize(Roles = "User")]
+        public async Task<ActionResult<IEnumerable<OrderDto>>> GetMyOrders()
+        {
+            var currentUserId = GetCurrentUserId();
+
+            var orders = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .Where(o => o.UserId == currentUserId)
+                .ToListAsync();
+
+            var result = orders.Select(ToOrderDto).ToList();
+            return Ok(result);
         }
 
         // ================== LẤY CHI TIẾT MỘT ORDER ==================
         // GET: api/orders/5
+        // Admin xem được tất cả, User chỉ xem được đơn của mình
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<Order>> GetById(int id)
+        public async Task<ActionResult<OrderDto>> GetById(int id)
         {
             var order = await _context.Orders
                 .Include(o => o.OrderDetails)
@@ -47,37 +72,101 @@ namespace HeThongDonHangNho.Api.Controllers
             if (order == null)
                 return NotFound();
 
-            return Ok(order);
+            if (!IsAdmin)
+            {
+                var currentUserId = GetCurrentUserId();
+
+                if (order.UserId != currentUserId)
+                    return Forbid(); // User cố xem đơn của người khác
+            }
+
+            var dto = ToOrderDto(order);
+            return Ok(dto);
         }
 
         // ================== TẠO ĐƠN HÀNG MỚI ==================
         // POST: api/orders
+        // Admin & User đều tạo đơn được, nhưng User chỉ tạo cho chính mình
         [HttpPost]
-        public async Task<ActionResult<Order>> Create(Order order)
+        public async Task<ActionResult<OrderDto>> Create([FromBody] OrderCreateDto dto)
         {
-            // Tính TotalAmount nếu có OrderDetails gửi lên
-            if (order.OrderDetails != null && order.OrderDetails.Count > 0)
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto.OrderDetails == null || !dto.OrderDetails.Any())
+                return BadRequest(new { message = "Đơn hàng phải có ít nhất 1 sản phẩm." });
+
+            var currentUserId = GetCurrentUserId();
+            var role = User.FindFirstValue(ClaimTypes.Role);
+
+            int? userIdForOrder = role == "User" ? currentUserId : null;
+
+            // Nếu m có link User -> Customer, chỗ này có thể check CustomerId có thuộc User hay không
+            if (role == "User")
             {
-                order.TotalAmount = order.OrderDetails.Sum(od => od.Quantity * od.UnitPrice);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == currentUserId);
+                if (user == null || user.CustomerId == null || user.CustomerId != dto.CustomerId)
+                {
+                    return Forbid();
+                }
             }
 
-            order.CreatedAt = DateTime.UtcNow;
-            order.UpdatedAt = null;
+            // Chuẩn bị OrderDetails: lấy giá từ Product trong DB
+            var orderDetails = new List<OrderDetail>();
+
+            foreach (var item in dto.OrderDetails)
+            {
+                if (item.Quantity <= 0)
+                    return BadRequest(new { message = "Số lượng phải > 0." });
+
+                var product = await _context.Products.FindAsync(item.ProductId);
+                if (product == null)
+                    return BadRequest(new { message = $"Sản phẩm {item.ProductId} không tồn tại." });
+
+                var detail = new OrderDetail
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = product.Price
+                };
+
+                orderDetails.Add(detail);
+            }
+
+            var order = new Order
+            {
+                CustomerId = dto.CustomerId,
+                ShippingAddress = dto.ShippingAddress ?? string.Empty,
+                Status = "Pending",
+                OrderDate = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = null,
+                UserId = userIdForOrder,
+                OrderDetails = orderDetails
+            };
+
+            order.TotalAmount = order.OrderDetails.Sum(od => od.Quantity * od.UnitPrice);
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+            var result = ToOrderDto(order);
+
+            return CreatedAtAction(nameof(GetById), new { id = order.Id }, result);
         }
 
         // ================== CẬP NHẬT ĐƠN HÀNG ==================
         // Chỉ Admin được update (ví dụ đổi trạng thái, địa chỉ...)
+        // PUT: api/orders/5
         [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, Order updated)
+        public async Task<IActionResult> Update(int id, [FromBody] OrderUpdateDto dto)
         {
-            if (id != updated.Id)
-                return BadRequest();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != dto.Id)
+                return BadRequest(new { message = "Id không khớp." });
 
             var order = await _context.Orders
                 .Include(o => o.OrderDetails)
@@ -86,11 +175,12 @@ namespace HeThongDonHangNho.Api.Controllers
             if (order == null)
                 return NotFound();
 
-            // Update các field cho phép
-            order.Status = updated.Status;
-            order.ShippingAddress = updated.ShippingAddress;
-            order.TotalAmount = updated.TotalAmount;
+            order.Status = dto.Status;
+            order.ShippingAddress = dto.ShippingAddress ?? order.ShippingAddress;
             order.UpdatedAt = DateTime.UtcNow;
+
+            // Tính lại tổng tiền từ chi tiết (an toàn hơn là tin client)
+            order.TotalAmount = order.OrderDetails.Sum(od => od.Quantity * od.UnitPrice);
 
             await _context.SaveChangesAsync();
 
@@ -99,18 +189,51 @@ namespace HeThongDonHangNho.Api.Controllers
 
         // ================== XÓA ĐƠN HÀNG ==================
         // Chỉ Admin được xóa
+        // DELETE: api/orders/5
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
             if (order == null)
                 return NotFound();
 
+            // Xóa chi tiết trước cho chắc (nếu không dùng cascade)
+            _context.OrderDetails.RemoveRange(order.OrderDetails);
             _context.Orders.Remove(order);
+
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // ================== MAPPING HELPER ==================
+
+        private static OrderDto ToOrderDto(Order o)
+        {
+            return new OrderDto
+            {
+                Id = o.Id,
+                CustomerId = o.CustomerId,
+                Status = o.Status,
+                ShippingAddress = o.ShippingAddress,
+                TotalAmount = o.TotalAmount,
+                CreatedAt = o.CreatedAt,
+                UpdatedAt = o.UpdatedAt,
+                OrderDetails = o.OrderDetails?
+                    .Select(d => new OrderDetailDto
+                    {
+                        Id = d.Id,
+                        OrderId = d.OrderId,
+                        ProductId = d.ProductId,
+                        Quantity = d.Quantity,
+                        UnitPrice = d.UnitPrice
+                    })
+                    .ToList() ?? new List<OrderDetailDto>()
+            };
         }
     }
 }

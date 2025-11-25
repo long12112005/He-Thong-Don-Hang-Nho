@@ -1,13 +1,12 @@
-namespace HeThongDonHangNho.Api.DTOs.Orders {
-    public class CreateOrderDto {
+using System.Collections.Generic;
+
+namespace HeThongDonHangNho.Api.DTOs
+{
+    public class OrderCreateDto
+    {
         public int CustomerId { get; set; }
-        public List<OrderItemDto> Items { get; set; } = new List<OrderItemDto>();
-        public string ShippingAddress { get; set; } = string.Empty;
+        public string ShippingAddress { get; set; }
 
-    }
-
-    public class OrderItemDto {
-        public int ProductId { get; set; }
-        public int Quantity { get; set; }
+        public List<OrderDetailCreateDto> OrderDetails { get; set; }
     }
 }
