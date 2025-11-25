@@ -2,12 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using HeThongDonHangNho.Api.Data;
-using HeThongDonHangNho.Api.Dtos.auth;
-using HeThongDonHangNho.Api.Dtos.Auth;
 using HeThongDonHangNho.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using HeThongDonHangNho.Api.DTOs.auth;
+using HeThongDonHangNhot.Api.DTOs.auth;
 
 namespace HeThongDonHangNho.Api.Controllers
 {
@@ -27,6 +27,8 @@ namespace HeThongDonHangNho.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
             var exists = await _context.Users.AnyAsync(u => u.Email == dto.Email);
             if (exists)
                 return BadRequest(new { message = "Email đã được sử dụng" });
@@ -35,7 +37,7 @@ namespace HeThongDonHangNho.Api.Controllers
             {
                 Name = dto.Name,
                 Email = dto.Email,
-                Role = dto.Role
+                Role = "User", // ép mặc định thành User
             };
             user.SetPassword(dto.Password);
 
@@ -48,6 +50,8 @@ namespace HeThongDonHangNho.Api.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
             if (user == null || !user.VerifyPassword(dto.Password))
                 return Unauthorized(new { message = "Email hoặc mật khẩu không đúng" });

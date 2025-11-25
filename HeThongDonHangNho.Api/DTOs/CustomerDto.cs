@@ -1,3 +1,5 @@
+
+
 namespace HeThongDonHangNho.Api.Dtos.Customers
 {
     public class CustomerDto
@@ -6,5 +8,7 @@ namespace HeThongDonHangNho.Api.Dtos.Customers
         public string Name { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string? Address { get; set; }
+        public string Email { get; set; } = string.Empty;
+
     }
 }
