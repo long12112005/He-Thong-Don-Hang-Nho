@@ -257,3 +257,245 @@ body {
         position: static; /* Bỏ sticky trên màn hình nhỏ */
     }
 }
+/* order.css */
+
+/* Reset cơ bản */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Wrapper tổng */
+.admin-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 240px;
+    background-color: #1f2937; /* màu tối */
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    margin-right: 10px;
+}
+
+.logo-text {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+    flex-grow: 1;
+}
+
+.sidebar-menu li {
+    margin: 5px 0;
+}
+
+.sidebar-menu li a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #fff;
+    padding: 12px 20px;
+    transition: background 0.3s;
+    border-radius: 4px;
+}
+
+.sidebar-menu li a i {
+    margin-right: 10px;
+}
+
+.sidebar-menu li a:hover,
+.sidebar-menu li.active a {
+    background-color: #374151; /* màu hover */
+}
+
+/* Main content */
+.main-content-wrapper {
+    flex-grow: 1;
+    background-color: #f3f4f6;
+    padding: 20px 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.breadcrumb {
+    font-size: 14px;
+}
+
+.breadcrumb a {
+    text-decoration: none;
+    color: #3b82f6;
+}
+
+.breadcrumb .current-page {
+    color: #374151;
+}
+
+.header-right .user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #9ca3af;
+    margin-left: 10px;
+    margin-right: 5px;
+}
+
+/* Content */
+.content {
+    flex-grow: 1;
+}
+
+/* Cards */
+.card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.card-title-bordered {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 5px;
+}
+
+/* Layout order */
+.order-layout {
+    display: flex;
+    gap: 20px;
+}
+
+/* Chọn sản phẩm */
+.product-selection-card {
+    flex: 1;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+}
+
+.loading-message {
+    color: #6b7280;
+}
+
+/* Giỏ hàng + form */
+.cart-summary-card {
+    flex: 1;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.divider {
+    margin: 15px 0;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+}
+
+.order-total {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.total-amount-value {
+    color: #ef4444;
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+/* Buttons */
+.btn-primary-custom {
+    background-color: #3b82f6;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+.btn-primary-custom:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+.btn-primary-custom:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+}
+
+/* Alert message */
+.alert {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    background-color: #fde68a;
+    color: #92400e;
+}
+
+/* Giỏ hàng trống */
+.empty-cart-message {
+    color: #6b7280;
+    font-style: italic;
+}
