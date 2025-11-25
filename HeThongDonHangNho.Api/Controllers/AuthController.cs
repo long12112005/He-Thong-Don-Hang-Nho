@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using HeThongDonHangNho.Api.DTOs.auth;
+using Microsoft.AspNetCore.Identity.Data;
 using HeThongDonHangNhot.Api.DTOs.auth;
 
 namespace HeThongDonHangNho.Api.Controllers
