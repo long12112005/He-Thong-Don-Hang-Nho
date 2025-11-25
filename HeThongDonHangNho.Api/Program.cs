@@ -13,6 +13,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .AllowAnyOrigin()   // Tạm thời cho mọi origin để test
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // ==== SWAGGER + JWT ==== 
 builder.Services.AddSwaggerGen(c =>
@@ -81,6 +91,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles(); 
+
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách Đơn hàng</title>
+    <link rel="stylesheet" href="../css/orders.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container-user">
+        
+        <div class="page-title-header">
+            <i class="fas fa-list-alt page-title-icon"></i>
+            <h1>Danh sách Đơn hàng của bạn</h1>
+        </div>
+        
+        <div id="message" class="alert" style="display: none;"></div>
+
+        <div class="table-card">
+            <table id="ordersTable">
+                <thead>
+                    <tr>
+                        <th>Mã Đơn hàng</th>
+                        <th>Ngày đặt</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th>Xem chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <tr><td colspan="5" id="loadingMsg">Đang tải danh sách đơn hàng...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="orderDetailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Chi tiết Đơn hàng <span id="modalOrderId"></span></h2>
+            <div id="modalOrderInfo" class="modal-info-section">
+                </div>
+            
+            <h3 class="modal-detail-title">Sản phẩm đã đặt</h3>
+            <table class="modal-detail-table">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Đơn giá</th>
+                        <th>Số lượng</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody id="modalOrderDetailsBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="../js/services/authService.js"></script>
+    <script src="../js/services/orderService.js"></script>
+    <script src="../js/orders.js"></script> 
+</body>
+</html>
