@@ -5,7 +5,6 @@
 
 // Giả định: Hàm checkRole có trong AuthService (hoặc được cung cấp từ backend)
 const ADMIN_ROLE = 'Admin';
-const LOGIN_PAGE = 'login.html';
 
 // Khai báo các biến DOM element cần thiết
 const messageEl = document.getElementById('message'); // ĐÃ SỬA ID: #message

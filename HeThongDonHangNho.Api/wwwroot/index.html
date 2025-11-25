@@ -32,9 +32,9 @@
     <script src="js/services/authService.js"></script>
     <script>
         // Các trang đích
-        const LOGIN_PAGE = 'pages/login.html';
-        const ADMIN_DASHBOARD = 'pages/products.html'; // Giả định Admin vào trang quản lý sản phẩm
-        const USER_DASHBOARD = 'pages/order.html';     // Giả định User vào trang tạo đơn hàng
+        const LOGIN_PAGE = 'pages/login.html';     // đây là ok
+        window.location.replace(LOGIN_PAGE);
+   // Giả định User vào trang tạo đơn hàng
 
         // Giả định: Backend sẽ cung cấp role khi giải mã JWT Token. 
         // Trong môi trường Frontend đơn giản này, ta chỉ kiểm tra Token.

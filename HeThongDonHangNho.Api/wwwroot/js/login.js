@@ -3,6 +3,8 @@
  * Logic xử lý trang đăng nhập
  */
 
+const LOGIN_PAGE = 'login.html';
+
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Lấy các thành phần DOM
     const loginForm = document.getElementById('loginForm');
