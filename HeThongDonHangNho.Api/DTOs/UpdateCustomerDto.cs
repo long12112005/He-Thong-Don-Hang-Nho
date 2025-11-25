@@ -14,5 +14,12 @@ namespace HeThongDonHangNho.Api.Dtos.Customers
         public string Phone { get; set; } = string.Empty;
 
         public string? Address { get; set; }
+
+    
+        [Required]
+        [EmailAddress]
+        [StringLength(200)]
+        public string Email { get; set; } = string.Empty;
+
     }
 }

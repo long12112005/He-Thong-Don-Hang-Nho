@@ -3,12 +3,13 @@ using HeThongDonHangNho.Api.Models;
 using HeThongDonHangNho.Api.Dtos.Customers;   
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HeThongDonHangNho.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    
+    [Authorize(Roles = "Admin")] // Chỉ Admin mới được quản lý khách hàng
     public class CustomersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -20,6 +21,7 @@ namespace HeThongDonHangNho.Api.Controllers
 
         // GET: api/customers
         [HttpGet]
+        [Authorize(Roles = "Admin")] // Admin được xem danh sách khách hàng
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {
             var customers = await _context.Customers.ToListAsync();
@@ -46,6 +48,7 @@ namespace HeThongDonHangNho.Api.Controllers
 
         // POST: api/customers
         [HttpPost]
+        [Authorize(Roles = "Admin")] // Chỉ Admin mới được tạo khách hàng
         public async Task<ActionResult<CustomerDto>> CreateCustomer(CreateCustomerDto dto)
         {
             if (!ModelState.IsValid)
@@ -64,6 +67,7 @@ namespace HeThongDonHangNho.Api.Controllers
 
         // PUT: api/customers/5
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin")] // Chỉ Admin mới được cập nhật khách hàng
         public async Task<IActionResult> UpdateCustomer(int id, UpdateCustomerDto dto)
         {
             if (!ModelState.IsValid)
@@ -93,6 +97,7 @@ namespace HeThongDonHangNho.Api.Controllers
 
         // DELETE: api/customers/5
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")] // Chỉ Admin mới được xóa khách hàng
         public async Task<IActionResult> DeleteCustomer(int id)
         {
             var customer = await _context.Customers.FindAsync(id);
@@ -110,7 +115,7 @@ namespace HeThongDonHangNho.Api.Controllers
             return _context.Customers.Any(e => e.Id == id);
         }
 
-       
+        // ================== MAPPING HELPER ==================
 
         private static CustomerDto ToCustomerDto(Customer c)
         {
@@ -119,6 +124,7 @@ namespace HeThongDonHangNho.Api.Controllers
                 Id = c.Id,
                 Name = c.Name,
                 Phone = c.Phone,
+                Email = c.Email,      // ✅ TRẢ EMAIL RA CHO CLIENT
                 Address = c.Address
             };
         }
@@ -129,6 +135,7 @@ namespace HeThongDonHangNho.Api.Controllers
             {
                 Name = dto.Name,
                 Phone = dto.Phone,
+                Email = dto.Email,    // ✅ NHẬN EMAIL TỪ DTO
                 Address = dto.Address
             };
         }
@@ -137,6 +144,7 @@ namespace HeThongDonHangNho.Api.Controllers
         {
             entity.Name = dto.Name;
             entity.Phone = dto.Phone;
+            entity.Email = dto.Email;    // ✅ CẬP NHẬT EMAIL
             entity.Address = dto.Address;
         }
     }
