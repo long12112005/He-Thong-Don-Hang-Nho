@@ -3,80 +3,81 @@
  * Chứa các hàm liên quan đến xác thực (Auth)
  */
 
-// Giả định hàm `callApi` có sẵn từ `api.js` hoặc bạn sẽ tự tạo.
-// Ví dụ: const API_BASE_URL = 'http://localhost:3000/api';
+// Base URL chung cho mọi service, ví dụ: http://localhost:5161/api
+const API_BASE_URL = window.location.origin + '/api';
 
 const AUTH_KEYS = {
-    TOKEN: 'authToken'
+    TOKEN: 'authToken',
+    USER_NAME: 'authUserName',
+    USER_ROLE: 'authUserRole'
 };
 
 const AuthService = {
     /**
      * Gửi request đăng nhập
-     * @param {string} username Email hoặc Username
-     * @param {string} password Mật khẩu
-     * @returns {Promise<object>} Đối tượng user/payload nếu thành công
+     * @param {string} username  // ở đây là email
+     * @param {string} password
      */
     async login(username, password) {
-        // Đây là nơi bạn gửi request POST đến API Login của bạn
-        // Giả định API_BASE_URL/login là endpoint đăng nhập
-        const API_URL = 'http://your-api-domain.com/api/login';  
+        const url = `${API_BASE_URL}/Auth/login`;
 
         try {
-            const response = await fetch(API_URL, {
+            const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: username,
+                    password: password
+                })
             });
 
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
 
-            if (response.ok) {
-                // Đăng nhập thành công
-                const token = data.token; // Giả sử API trả về { token: '...' }
-                
-                // Lưu token vào localStorage (hoặc sessionStorage)
-                AuthService.saveToken(token); 
-                
-                return data; // Trả về dữ liệu thành công
-            } else {
-                // Đăng nhập thất bại (lỗi 400, 401,...)
-                // Ném lỗi để bắt ở tầng UI
-                throw new Error(data.message || 'Sai tên đăng nhập hoặc mật khẩu.');
+            if (!response.ok) {
+                throw new Error(data.message || 'Sai email hoặc mật khẩu.');
             }
+
+            const token = data.token;
+            if (!token) {
+                throw new Error('API không trả về token.');
+            }
+
+            // Lưu token + info cơ bản
+            this.saveToken(token);
+            if (data.name) localStorage.setItem(AUTH_KEYS.USER_NAME, data.name);
+            if (data.role) localStorage.setItem(AUTH_KEYS.USER_ROLE, data.role);
+
+            return data;
         } catch (error) {
-            console.error("Lỗi khi gọi API Đăng nhập:", error);
-            throw new Error('Không thể kết nối đến máy chủ hoặc lỗi không xác định.');
+            console.error('Lỗi khi gọi API đăng nhập:', error);
+            throw new Error(error.message || 'Không thể kết nối tới máy chủ.');
         }
     },
 
-    /**
-     * Lưu JWT token vào Local Storage
-     * @param {string} token 
-     */
     saveToken(token) {
         localStorage.setItem(AUTH_KEYS.TOKEN, token);
     },
 
-    /**
-     * Lấy token
-     * @returns {string | null}
-     */
     getToken() {
         return localStorage.getItem(AUTH_KEYS.TOKEN);
     },
 
-    /**
-     * Xóa token khi đăng xuất
-     */
+    getUserName() {
+        return localStorage.getItem(AUTH_KEYS.USER_NAME);
+    },
+
+    getUserRole() {
+        return localStorage.getItem(AUTH_KEYS.USER_ROLE);
+    },
+
     logout() {
         localStorage.removeItem(AUTH_KEYS.TOKEN);
-        // Có thể thêm logic gọi API logout nếu cần
+        localStorage.removeItem(AUTH_KEYS.USER_NAME);
+        localStorage.removeItem(AUTH_KEYS.USER_ROLE);
+        window.location.href = 'login.html';
     }
 };
 
-// Có thể xuất ra (export) nếu dùng module, hoặc gán vào window nếu dùng script thường
-// Dùng script thường:
-// window.AuthService = AuthService;
+// Cho các file khác xài
+window.AuthService = AuthService;
+window.API_BASE_URL = API_BASE_URL;
