@@ -221,3 +221,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
     updateCartSummary(); // Hiển thị trạng thái giỏ hàng ban đầu
 });
+// 5. Xử lý thành công
+displayMessage(`Tạo đơn hàng thành công! Mã đơn: ${newOrder.orderId || newOrder.id}`, 'success');
+
+// Chuyển hướng sang trang chi tiết đơn hàng sau 2 giây
+setTimeout(() => {
+    if(newOrder.orderId || newOrder.id){
+        const orderId = newOrder.orderId || newOrder.id;
+        window.location.href = `orders.html?id=${orderId}`;
+    }
+}, 2000);
