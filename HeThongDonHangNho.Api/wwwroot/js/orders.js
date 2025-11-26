@@ -4,117 +4,113 @@
  */
 
 const LOGIN_PAGE = 'login.html';
-const ordersTableBody = document.getElementById('ordersTableBody');
-const loadingMsg = document.getElementById('loadingMsg');
-const modal = document.getElementById('orderDetailModal');
-const closeBtn = document.querySelector('.close-btn');
-const modalOrderId = document.getElementById('modalOrderId');
-const modalOrderInfo = document.getElementById('modalOrderInfo');
-const modalOrderDetailsBody = document.getElementById('modalOrderDetailsBody');
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. KIỂM TRA ĐĂNG NHẬP ---
-    if (!AuthService.getToken()) {
-        alert('Vui lòng đăng nhập để xem đơn hàng.');
+    const ordersTableBody = document.getElementById('ordersTableBody');
+    const loadingMsg = document.getElementById('loadingMsg');
+    const modal = document.getElementById('orderDetailModal');
+    const closeBtn = document.querySelector('.close-btn');
+    const modalOrderId = document.getElementById('modalOrderId');
+    const modalOrderInfo = document.getElementById('modalOrderInfo');
+    const modalOrderDetailsBody = document.getElementById('modalOrderDetailsBody');
+
+    // --- 1️⃣ Kiểm tra đăng nhập ---
+    if (!AuthService.isLoggedIn()) {
+        alert('⚠ Bạn cần đăng nhập để xem đơn hàng!');
         window.location.href = LOGIN_PAGE;
         return;
     }
 
     /**
-     * Tải danh sách đơn hàng của người dùng hiện tại
+     * 🔄 Tải danh sách đơn hàng của người dùng
      */
     const loadOrders = async () => {
         try {
-            loadingMsg.textContent = 'Đang tải danh sách đơn hàng...';
+            loadingMsg.textContent = '🔄 Đang tải danh sách đơn hàng...';
             const orders = await OrderService.getOrdersByUser();
             renderOrdersTable(orders);
-        } catch (error) {
-            loadingMsg.innerHTML = `<p style="color: red;">Lỗi: Không thể tải đơn hàng. ${error.message}</p>`;
+        } catch (err) {
+            loadingMsg.innerHTML = `<p style="color:red;">❌ Lỗi tải đơn hàng: ${err.message}</p>`;
         }
     };
 
     /**
-     * Hiển thị danh sách đơn hàng ra bảng
+     * 🧾 Render danh sách đơn hàng ra bảng
      */
     const renderOrdersTable = (orders) => {
-        ordersTableBody.innerHTML = ''; // Xóa thông báo loading
+        ordersTableBody.innerHTML = '';
 
         if (!orders || orders.length === 0) {
-            ordersTableBody.innerHTML = '<tr><td colspan="5">Bạn chưa có đơn hàng nào.</td></tr>';
+            ordersTableBody.innerHTML = `
+                <tr><td colspan="5">⚠ Bạn chưa có đơn hàng nào.</td></tr>`;
             return;
         }
 
         orders.forEach(order => {
             const row = ordersTableBody.insertRow();
-            const totalFormatted = order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') : 'N/A';
-            const dateFormatted = new Date(order.orderDate || order.createdDate).toLocaleDateString('vi-VN');
+
+            const totalFormatted = (order.totalAmount ?? 0).toLocaleString('vi-VN');
+            const dateFormatted = new Date(order.createdAt || order.createdDate)
+                .toLocaleDateString('vi-VN');
+
+            const status = order.status || 'Unknown';
 
             row.innerHTML = `
                 <td>#${order.id}</td>
                 <td>${dateFormatted}</td>
                 <td><strong>${totalFormatted} VNĐ</strong></td>
-                <td><span class="status-${order.status.toLowerCase()}">${order.status}</span></td>
-                <td><button class="btn-detail" data-order-id="${order.id}">Xem Chi tiết</button></td>
+                <td><span class="status status-${status.toLowerCase()}">${status}</span></td>
+                <td><button class="btn-detail" data-id="${order.id}">Xem Chi tiết</button></td>
             `;
         });
-        
-        // Gắn sự kiện click cho nút Xem Chi tiết
-        document.querySelectorAll('.btn-detail').forEach(button => {
-            button.addEventListener('click', (e) => showOrderDetail(e.target.dataset.orderId));
+
+        document.querySelectorAll('.btn-detail').forEach(btn => {
+            btn.addEventListener('click', e => {
+                const orderId = e.target.dataset.id;
+                showOrderDetail(orderId);
+            });
         });
     };
 
     /**
-     * Hiển thị Modal chi tiết đơn hàng
+     * 📦 Hiển thị modal chi tiết đơn hàng
      */
     const showOrderDetail = async (orderId) => {
-        modalOrderId.textContent = `#${orderId}`;
-        modalOrderInfo.innerHTML = 'Đang tải...';
-        modalOrderDetailsBody.innerHTML = '';
         modal.style.display = 'block';
+        modalOrderId.textContent = `#${orderId}`;
+        modalOrderInfo.innerHTML = '⏳ Đang tải...';
+        modalOrderDetailsBody.innerHTML = '';
 
         try {
-            const detail = await OrderService.getOrderDetail(orderId);
+            const order = await OrderService.getOrderDetail(orderId);
 
-            // 1. Hiển thị thông tin khách hàng/tóm tắt
-            const totalFormatted = detail.totalAmount ? detail.totalAmount.toLocaleString('vi-VN') : 'N/A';
             modalOrderInfo.innerHTML = `
-                <p><strong>Tên khách hàng:</strong> ${detail.customerName}</p>
-                <p><strong>Địa chỉ:</strong> ${detail.customerAddress}</p>
-                <p class="order-total-modal"><strong>Tổng giá trị:</strong> <span class="total-amount-value">${totalFormatted} VNĐ</span></p>
+                <p><strong>Khách:</strong> ${order.customerName || '—'}</p>
+                <p><strong>Địa chỉ:</strong> ${order.customerAddress || '—'}</p>
+                <p class="order-total-modal"><strong>Tổng giá trị:</strong>
+                <span class="total-amount-value">${(order.totalAmount ?? 0).toLocaleString('vi-VN')} VNĐ</span></p>
             `;
 
-            // 2. Hiển thị chi tiết sản phẩm (OrderDetails)
-            detail.orderDetails.forEach(item => {
+            order.orderDetails.forEach(item => {
                 const row = modalOrderDetailsBody.insertRow();
-                const priceFormatted = item.price ? item.price.toLocaleString('vi-VN') : '0';
-                const subTotal = (item.quantity * item.price) || 0;
-                const subTotalFormatted = subTotal.toLocaleString('vi-VN');
 
                 row.innerHTML = `
-                    <td>${item.productName || 'Sản phẩm không rõ'}</td>
-                    <td>${priceFormatted} VNĐ</td>
+                    <td>${item.productName}</td>
+                    <td>${(item.price ?? 0).toLocaleString('vi-VN')} VNĐ</td>
                     <td>${item.quantity}</td>
-                    <td>${subTotalFormatted} VNĐ</td>
+                    <td>${(item.price * item.quantity).toLocaleString('vi-VN')} VNĐ</td>
                 `;
             });
 
-        } catch (error) {
-            modalOrderInfo.innerHTML = `<p style="color: red;">Lỗi tải chi tiết: ${error.message}</p>`;
+        } catch (err) {
+            modalOrderInfo.innerHTML = `<p style="color:red;">❌ Lỗi: ${err.message}</p>`;
         }
     };
 
-    // --- Xử lý Modal ---
-    closeBtn.onclick = () => {
-        modal.style.display = 'none';
-    };
+    // 🛑 Đóng modal
+    closeBtn.onclick = () => (modal.style.display = 'none');
+    window.onclick = (e) => (e.target === modal ? modal.style.display = 'none' : null);
 
-    window.onclick = (event) => {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    };
-
-    // --- KHỞI ĐỘNG ---
+    // 🚀 Khởi động
     loadOrders();
 });

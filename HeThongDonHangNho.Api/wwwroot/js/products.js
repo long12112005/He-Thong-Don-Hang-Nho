@@ -1,8 +1,9 @@
 /**
  * js/products.js
- * Logic xử lý trang Quản lý Sản phẩm
+ * Logic xử lý trang Quản lý Sản phẩm (Admin Only)
  */
 
+const LOGIN_PAGE = 'login.html';
 const ADMIN_ROLE = 'Admin';
 
 // DOM Elements
@@ -17,128 +18,113 @@ let isEditing = false;
 let allProducts = [];
 
 /*-------------------------*
- | HIỂN THỊ THÔNG BÁO UI  |
+ |  HIỂN THỊ THÔNG BÁO     |
  *-------------------------*/
 const showMessage = (type, text) => {
     messageEl.textContent = text;
     messageEl.className = `alert alert-${type}`;
     messageEl.style.display = 'block';
-    setTimeout(() => (messageEl.style.display = 'none'), 5000);
+    setTimeout(() => (messageEl.style.display = 'none'), 4000);
 };
 
 /*-------------------------*
- | KIỂM TRA QUYỀN ADMIN   |
+ | KIỂM TRA TOKEN & ROLE   |
  *-------------------------*/
 const validateAuthentication = () => {
     const token = AuthService.getToken();
 
-    // 1. Chưa đăng nhập → chặn + chuyển login
     if (!token) {
-        messageEl.style.display = 'block';
-        messageEl.className = 'alert alert-error';
-        messageEl.textContent = 'Bạn cần đăng nhập để truy cập trang này.';
-        setTimeout(() => (window.location.href = LOGIN_PAGE), 2000);
+        alert('Bạn cần đăng nhập để truy cập trang này.');
+        window.location.href = LOGIN_PAGE;
         return false;
     }
 
-    // 2. Lấy thông tin user từ localStorage
     const user = AuthService.getUser();
-
     if (!user) {
-        messageEl.style.display = 'block';
-        messageEl.className = 'alert alert-error';
-        messageEl.textContent = 'Không thể xác thực người dùng.';
+        showMessage('error', 'Không xác thực được người dùng.');
         return false;
     }
 
-    // 3. Không phải Admin → chặn toàn bộ giao diện
     if (user.role !== ADMIN_ROLE) {
         document.body.innerHTML = `
-            <div style="margin: 50px auto; max-width: 600px; text-align: center;">
-                <h2 style="color: red;">⛔ Truy cập bị từ chối</h2>
-                <p>Bạn không có quyền Admin để truy cập trang này.</p>
-            </div>
-        `;
+            <div style="margin:50px auto;max-width:650px;text-align:center;">
+                <h2 style="color:red;">⛔ Truy cập bị từ chối</h2>
+                <p>Chỉ Admin mới có quyền quản lý sản phẩm.</p>
+            </div>`;
         return false;
     }
 
-    return true; // OK → được phép truy cập
+    return true;
 };
 
 /*-------------------------*
- | TẢI & HIỂN THỊ SP       |
+ | LOAD & RENDER PRODUCTS  |
  *-------------------------*/
 const fetchAndRenderProducts = async () => {
     try {
-        productTableBody.innerHTML = '<tr><td colspan="5">Đang tải dữ liệu...</td></tr>';
+        productTableBody.innerHTML = `<tr><td colspan="5">Đang tải dữ liệu...</td></tr>`;
 
         const products = await ProductService.getProducts();
         allProducts = products;
 
-        productTableBody.innerHTML = '';
-
-        if (products.length === 0) {
-            productTableBody.innerHTML = '<tr><td colspan="5">Chưa có sản phẩm nào.</td></tr>';
+        if (!products.length) {
+            productTableBody.innerHTML = `<tr><td colspan="5">Chưa có sản phẩm nào.</td></tr>`;
             return;
         }
 
+        productTableBody.innerHTML = '';
         products.forEach(product => {
             const row = productTableBody.insertRow();
             row.innerHTML = `
                 <td>${product.id}</td>
                 <td>${product.name}</td>
                 <td>${(product.price || 0).toLocaleString('vi-VN')} VNĐ</td>
-                <td>${(product.description || '').substring(0, 50)}...</td>
+                <td>${(product.description || '').substring(0, 60)}...</td>
                 <td>
-                    <button class="btn-edit btn-secondary" data-id="${product.id}">
-                        <i class="fas fa-edit"></i> Sửa
-                    </button>
-                    <button class="btn-delete btn-danger" data-id="${product.id}">
-                        <i class="fas fa-trash"></i> Xóa
-                    </button>
+                    <button class="btn-edit btn-secondary" data-id="${product.id}">✏ Sửa</button>
+                    <button class="btn-delete btn-danger" data-id="${product.id}">🗑 Xóa</button>
                 </td>
             `;
         });
 
         attachEventListeners();
-    } catch (error) {
-        console.error('Lỗi tải sản phẩm:', error);
+    } catch (err) {
         productTableBody.innerHTML =
-            `<tr><td colspan="5" style="color: red;">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
+            `<tr><td colspan="5" style="color:red;">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
     }
 };
 
 /*-------------------------*
- | CRUD SẢN PHẨM           |
+ | ADD & UPDATE PRODUCT    |
  *-------------------------*/
 productForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
     const saveBtn = document.getElementById('saveProductBtn');
     saveBtn.disabled = true;
     saveBtn.textContent = isEditing ? 'Đang cập nhật...' : 'Đang thêm...';
 
-    const productData = {
+    const productId = document.getElementById('productId').value;
+    const data = {
         name: document.getElementById('productName').value,
-        price: parseFloat(document.getElementById('productPrice').value),
+        price: Number(document.getElementById('productPrice').value),
         description: document.getElementById('productDescription').value
     };
 
-    const productId = document.getElementById('productId').value;
-
     try {
         if (isEditing) {
-            await ProductService.updateProduct(productId, productData);
-            showMessage('success', 'Cập nhật sản phẩm thành công!');
+            await ProductService.updateProduct(productId, data);
+            showMessage('success', 'Đã cập nhật sản phẩm ✔');
         } else {
-            await ProductService.addProduct(productData);
-            showMessage('success', 'Thêm sản phẩm thành công!');
+            await ProductService.addProduct(data);
+            showMessage('success', 'Đã thêm sản phẩm ✔');
         }
 
         productFormContainer.style.display = 'none';
         productForm.reset();
         fetchAndRenderProducts();
-    } catch (error) {
-        showMessage('error', 'Thao tác thất bại: ' + error.message);
+    } catch (err) {
+        showMessage('error', 'Thao tác thất bại: ' + err.message);
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Lưu';
@@ -146,38 +132,31 @@ productForm.addEventListener('submit', async (e) => {
 });
 
 /*-------------------------*
- | SỰ KIỆN EDIT + DELETE   |
+ | EDIT & DELETE BUTTONS   |
  *-------------------------*/
 const attachEventListeners = () => {
-    // DELETE
     document.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const id = e.currentTarget.dataset.id;
-            if (!window.confirm(`Xóa sản phẩm ID ${id}?`)) return;
-
+        btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            if (!confirm(`Xóa sản phẩm ID ${id}?`)) return;
             try {
                 await ProductService.deleteProduct(id);
-                showMessage('success', 'Xóa sản phẩm thành công.');
+                showMessage('success', 'Đã xóa sản phẩm ✔');
                 fetchAndRenderProducts();
-            } catch (error) {
-                showMessage('error', 'Xóa thất bại: ' + error.message);
+            } catch (err) {
+                showMessage('error', 'Xóa thất bại: ' + err.message);
             }
         });
     });
 
-    // EDIT
     document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
-            const product = allProducts.find(p => p.id === id);
+            const product = allProducts.find(p => p.id == id);
+            if (!product) return;
 
-            if (!product) {
-                showMessage('error', 'Không tìm thấy sản phẩm.');
-                return;
-            }
-
-            formTitle.textContent = 'Sửa';
             isEditing = true;
+            formTitle.textContent = 'Sửa Sản phẩm';
 
             document.getElementById('productId').value = product.id;
             document.getElementById('productName').value = product.name;
@@ -191,26 +170,25 @@ const attachEventListeners = () => {
 };
 
 /*-------------------------*
- | BUTTON THÊM + HỦY        |
+ | BUTTON: THÊM & HỦY      |
  *-------------------------*/
 addProductBtn.addEventListener('click', () => {
-    formTitle.textContent = 'Thêm';
     isEditing = false;
+    formTitle.textContent = 'Thêm Sản phẩm';
     productForm.reset();
     document.getElementById('productId').value = '';
     productFormContainer.style.display = 'block';
-    productFormContainer.scrollIntoView({ behavior: 'smooth' });
 });
 
 document.getElementById('cancelButton').addEventListener('click', () => {
-    productFormContainer.style.display = 'none';
     productForm.reset();
+    productFormContainer.style.display = 'none';
 });
 
 /*-------------------------*
- | CHẠY LÚC LOAD TRANG     |
+ | INIT WHEN PAGE LOAD     |
  *-------------------------*/
 document.addEventListener('DOMContentLoaded', () => {
-    if (!validateAuthentication()) return; // ❌ nếu fail → dừng toàn bộ
-    fetchAndRenderProducts(); // OK → load sản phẩm
+    if (!validateAuthentication()) return;
+    fetchAndRenderProducts();
 });
