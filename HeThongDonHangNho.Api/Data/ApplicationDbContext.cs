@@ -54,10 +54,10 @@ namespace HeThongDonHangNho.Api.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // -------- QUAN HỆ ORDERDETAIL - PRODUCT --------
-            // Mỗi OrderDetail trỏ tới 1 Product (không cần navigation ngược lại)
+            // Mỗi OrderDetail trỏ tới 1 Product, dùng navigation OrderDetail.Product
             modelBuilder.Entity<OrderDetail>()
-                .HasOne<Product>()                   // không cần OrderDetail.Product
-                .WithMany()                          // không cần Product.OrderDetails
+                .HasOne(od => od.Product)
+                .WithMany()
                 .HasForeignKey(od => od.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 

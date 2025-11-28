@@ -127,42 +127,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 📌 Submit tạo đơn hàng
-    orderForm.addEventListener('submit', async (e) => {
+     orderForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const items = Object.values(cart);
         if (!items.length) {
             displayMessage('Giỏ hàng trống.', 'error'); return;
         }
-       
-        const user = AuthService.getUser(); // Giả sử user có { customerId, name, role }
-        
-        const customerId = AuthService.getCustomerId();
-         if (!user || !user.customerId) {
-        displayMessage('Không tìm thấy ID khách hàng. Vui lòng đăng nhập lại.', 'error');
-        return;
-    }
-        if (!customerId) {
-            displayMessage('Lỗi: Không tìm thấy ID khách hàng.', 'error');
-            return;
-        }
-         let calculatedTotal = 0;
-        items.forEach(item => {
-            calculatedTotal += item.totalPrice;
-        });
+
         const orderData = {
-            customerId: customerId,
             customerName: document.getElementById('customerName').value,
-    // Phải là 'shippingAddress' thay vì 'customerAddress' nếu backend yêu cầu
-             shippingAddress: document.getElementById('customerAddress').value, 
-            status: 'New',
-            totalAmount: calculatedTotal,
-            // 🚨 SỬA LỖI 400 QUAN TRỌNG: THÊM CustomerId
-            customerId: customerId,
+            customerAddress: document.getElementById('customerAddress').value,
             orderDetails: items.map(i => ({
-            productId: i.product.id,
-            quantity: i.quantity,
-                price: i.product.price // Đơn giá (Unit Price)
+                productId: i.product.id,
+                quantity: i.quantity,
+                price: i.product.price
             }))
         };
 

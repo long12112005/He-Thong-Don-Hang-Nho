@@ -29,13 +29,10 @@ namespace HeThongDonHangNho.Api.Controllers
             return User.FindFirstValue(ClaimTypes.Role);
         }
 
-        /// <summary>
-        /// Lấy CustomerId gắn với tài khoản đang đăng nhập (từ JWT claim "customerId").
-        /// </summary>
         private int? GetCurrentCustomerId()
         {
-            var claim = User.FindFirst("customerId")?.Value;
-            if (int.TryParse(claim, out var customerId))
+            var claim = User.FindFirst("CustomerId");
+            if (claim != null && int.TryParse(claim.Value, out var customerId))
             {
                 return customerId;
             }
@@ -51,17 +48,18 @@ namespace HeThongDonHangNho.Api.Controllers
         public async Task<ActionResult<IEnumerable<OrderDto>>> GetAll()
         {
             var orders = await _context.Orders
+                .Include(o => o.Customer)
                 .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product)
                 .ToListAsync();
 
             var result = orders.Select(MapToOrderDto).ToList();
             return Ok(result);
         }
 
-        // ================== LẤY CÁC ĐƠN HÀNG CỦA CHÍNH USER ==================
+        // ================== LẤY ĐƠN HÀNG CỦA CHÍNH USER ==================
         // GET: api/orders/my
         [HttpGet("my")]
-        [Authorize(Roles = "User")]
         public async Task<ActionResult<IEnumerable<OrderDto>>> GetMyOrders()
         {
             var customerId = GetCurrentCustomerId();
@@ -71,7 +69,9 @@ namespace HeThongDonHangNho.Api.Controllers
             }
 
             var orders = await _context.Orders
+                .Include(o => o.Customer)
                 .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product)
                 .Where(o => o.CustomerId == customerId.Value)
                 .ToListAsync();
 
@@ -86,7 +86,9 @@ namespace HeThongDonHangNho.Api.Controllers
         public async Task<ActionResult<OrderDto>> GetById(int id)
         {
             var order = await _context.Orders
+                .Include(o => o.Customer)
                 .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (order == null)
@@ -117,31 +119,26 @@ namespace HeThongDonHangNho.Api.Controllers
             if (dto.OrderDetails == null || !dto.OrderDetails.Any())
                 return BadRequest(new { message = "Đơn hàng phải có ít nhất 1 sản phẩm." });
 
-            var role = GetCurrentRole();
             int customerId;
 
-            if (string.Equals(role, "User", StringComparison.OrdinalIgnoreCase))
+            if (IsAdmin)
             {
-                var currentCustomerId = GetCurrentCustomerId();
-                if (currentCustomerId == null)
-                    return BadRequest(new { message = "User chưa được gán CustomerId, không thể tạo đơn." });
+                if (dto.CustomerId <= 0)
+                    return BadRequest(new { message = "Admin tạo đơn phải truyền CustomerId hợp lệ." });
 
-                customerId = currentCustomerId.Value;
-            }
-            else if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
-            {
-                if (dto.CustomerId == null || dto.CustomerId <= 0)
-                    return BadRequest(new { message = "CustomerId phải > 0." });
-
-                var exists = await _context.Customers.AnyAsync(c => c.Id == dto.CustomerId.Value);
-                if (!exists)
+                var customer = await _context.Customers.FindAsync(dto.CustomerId);
+                if (customer == null)
                     return BadRequest(new { message = "Khách hàng không tồn tại." });
 
                 customerId = dto.CustomerId.Value;
             }
             else
             {
-                return Forbid();
+                var currentCustomerId = GetCurrentCustomerId();
+                if (currentCustomerId == null)
+                    return BadRequest(new { message = "Tài khoản hiện tại chưa được gán với khách hàng (CustomerId)." });
+
+                customerId = currentCustomerId.Value;
             }
 
             // Chuẩn bị danh sách chi tiết đơn, lấy UnitPrice từ Product.Price
@@ -157,11 +154,11 @@ namespace HeThongDonHangNho.Api.Controllers
                     return BadRequest(new { message = $"Sản phẩm {item.ProductId} không tồn tại." });
 
                 if (product.Price < 0)
-                    return BadRequest(new { message = "Giá sản phẩm phải >= 0." });
+                    return BadRequest(new { message = $"Giá sản phẩm {product.Name} không hợp lệ." });
 
                 var detail = new OrderDetail
                 {
-                    ProductId = item.ProductId,
+                    ProductId = product.Id,
                     Quantity = item.Quantity,
                     UnitPrice = product.Price
                 };
@@ -169,16 +166,16 @@ namespace HeThongDonHangNho.Api.Controllers
                 orderDetails.Add(detail);
             }
 
+            var totalAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity);
+
             var order = new Order
             {
                 CustomerId = customerId,
                 OrderDate = DateTime.UtcNow,
                 Status = "Pending",
+                TotalAmount = totalAmount,
                 OrderDetails = orderDetails
             };
-
-            // Tính tổng tiền
-            order.TotalAmount = order.OrderDetails.Sum(d => d.Quantity * d.UnitPrice);
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -187,12 +184,11 @@ namespace HeThongDonHangNho.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = order.Id }, result);
         }
 
-        // ================== CẬP NHẬT ĐƠN HÀNG (ADMIN) ==================
-        // Ở đây chỉ cho phép cập nhật Status cho đơn hàng.
-        // PUT: api/orders/5
-        [HttpPut("{id:int}")]
+        // ================== CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG (ADMIN) ==================
+        // PUT: api/orders/5/status
+        [HttpPut("{id:int}/status")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, [FromBody] OrderUpdateDto dto)
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] OrderUpdateDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -230,13 +226,18 @@ namespace HeThongDonHangNho.Api.Controllers
             return NoContent();
         }
 
-        // ================== HÀM MAP ENTITY -> DTO ==================
+        // ================== HÀM MAP MODEL -> DTO ==================
         private static OrderDto MapToOrderDto(Order o)
         {
             return new OrderDto
             {
                 Id = o.Id,
                 CustomerId = o.CustomerId,
+
+                // Thông tin khách hàng
+                CustomerName = o.Customer?.Name,
+                CustomerAddress = o.Customer?.Address,
+
                 OrderDate = o.OrderDate,
                 Status = o.Status,
                 TotalAmount = o.TotalAmount,
@@ -246,6 +247,7 @@ namespace HeThongDonHangNho.Api.Controllers
                         Id = d.Id,
                         OrderId = d.OrderId,
                         ProductId = d.ProductId,
+                        ProductName = d.Product?.Name,
                         Quantity = d.Quantity,
                         UnitPrice = d.UnitPrice
                     })

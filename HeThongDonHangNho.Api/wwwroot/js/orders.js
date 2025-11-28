@@ -12,8 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.querySelector('.close-btn');
     const modalOrderId = document.getElementById('modalOrderId');
     const modalOrderInfo = document.getElementById('modalOrderInfo');
-    const modalOrderDetailsBody = document.getElementById('modalOrderDetailsBody');
-
+    
     // --- 1️⃣ Kiểm tra đăng nhập ---
     if (!AuthService.isLoggedIn()) {
         alert('⚠ Bạn cần đăng nhập để xem đơn hàng!');
@@ -35,25 +34,37 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /**
-     * 🧾 Render danh sách đơn hàng ra bảng
+     * 🧾 Render bảng danh sách đơn hàng
      */
     const renderOrdersTable = (orders) => {
         ordersTableBody.innerHTML = '';
 
         if (!orders || orders.length === 0) {
-            ordersTableBody.innerHTML = `
-                <tr><td colspan="5">⚠ Bạn chưa có đơn hàng nào.</td></tr>`;
+            loadingMsg.textContent = '';
+            ordersTableBody.innerHTML =
+                `<tr><td colspan="5">⚠ Bạn chưa có đơn hàng nào.</td></tr>`;
             return;
         }
+
+        loadingMsg.textContent = '';
 
         orders.forEach(order => {
             const row = ordersTableBody.insertRow();
 
             const totalFormatted = (order.totalAmount ?? 0).toLocaleString('vi-VN');
-            const dateFormatted = new Date(order.createdAt || order.createdDate)
-                .toLocaleDateString('vi-VN');
 
-            const status = order.status || 'Unknown';
+            // Dùng đúng field OrderDate từ API
+            const dateValue = order.orderDate;
+            let dateFormatted = 'Không rõ';
+
+            if (dateValue) {
+                const dateObj = new Date(dateValue);
+                if (!isNaN(dateObj.getTime())) {
+                    dateFormatted = dateObj.toLocaleDateString('vi-VN');
+                }
+            }
+
+            const status = order.status || 'Pending';
 
             row.innerHTML = `
                 <td>#${order.id}</td>
@@ -75,41 +86,60 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * 📦 Hiển thị modal chi tiết đơn hàng
      */
-    const showOrderDetail = async (orderId) => {
-        modal.style.display = 'block';
-        modalOrderId.textContent = `#${orderId}`;
-        modalOrderInfo.innerHTML = '⏳ Đang tải...';
-        modalOrderDetailsBody.innerHTML = '';
+   const showOrderDetail = async (orderId) => {
+    // mở modal
+    modal.style.display = 'block';
+    modalOrderId.textContent = `#${orderId}`;
+    modalOrderInfo.innerHTML = '⏳ Đang tải...';
 
-        try {
-            const order = await OrderService.getOrderDetail(orderId);
+    try {
+        const order = await OrderService.getOrderDetail(orderId);
 
-            modalOrderInfo.innerHTML = `
-                <p><strong>Khách:</strong> ${order.customerName || '—'}</p>
-                <p><strong>Địa chỉ:</strong> ${order.customerAddress || '—'}</p>
-                <p class="order-total-modal"><strong>Tổng giá trị:</strong>
-                <span class="total-amount-value">${(order.totalAmount ?? 0).toLocaleString('vi-VN')} VNĐ</span></p>
-            `;
+        // Tạo html danh sách sản phẩm + số lượng
+        let productsHtml = '';
+
+        if (order.orderDetails && order.orderDetails.length > 0) {
+            productsHtml += `<p><strong>Sản phẩm & số lượng:</strong></p>`;
+            productsHtml += `<ul class="order-items-list">`;
 
             order.orderDetails.forEach(item => {
-                const row = modalOrderDetailsBody.insertRow();
+                const name = item.productName || '';
+                const qty = item.quantity ?? 0;
 
-                row.innerHTML = `
-                    <td>${item.productName}</td>
-                    <td>${(item.price ?? 0).toLocaleString('vi-VN')} VNĐ</td>
-                    <td>${item.quantity}</td>
-                    <td>${(item.price * item.quantity).toLocaleString('vi-VN')} VNĐ</td>
-                `;
+                productsHtml += `<li>${name} × ${qty}</li>`;
             });
 
-        } catch (err) {
-            modalOrderInfo.innerHTML = `<p style="color:red;">❌ Lỗi: ${err.message}</p>`;
+            productsHtml += `</ul>`;
+        } else {
+            productsHtml += `<p><strong>Sản phẩm & số lượng:</strong> Không có sản phẩm nào.</p>`;
         }
-    };
+
+        // Đổ vào modal
+        modalOrderInfo.innerHTML = `
+            <p><strong>Khách:</strong> ${order.customerName || '—'}</p>
+            <p><strong>Địa chỉ:</strong> ${order.customerAddress || '—'}</p>
+            <p class="order-total-modal">
+                <strong>Tổng giá trị:</strong>
+                <span class="total-amount-value">
+                    ${(order.totalAmount ?? 0).toLocaleString('vi-VN')} VNĐ
+                </span>
+            </p>
+            ${productsHtml}
+        `;
+
+    } catch (err) {
+        modalOrderInfo.innerHTML = `<p style="color:red;">❌ Lỗi: ${err.message}</p>`;
+    }
+};
+
+
+
 
     // 🛑 Đóng modal
     closeBtn.onclick = () => (modal.style.display = 'none');
-    window.onclick = (e) => (e.target === modal ? modal.style.display = 'none' : null);
+    window.onclick = (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+    };
 
     // 🚀 Khởi động
     loadOrders();

@@ -219,3 +219,11 @@
         margin-left: 0;
     }
 }
+.order-items-list {
+    margin-top: 4px;
+    margin-left: 20px;
+}
+
+.order-items-list li {
+    margin-bottom: 2px;
+}

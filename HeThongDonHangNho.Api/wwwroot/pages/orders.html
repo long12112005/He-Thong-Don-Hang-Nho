@@ -63,27 +63,23 @@
     </div>
 
     <!-- Modal chi tiết đơn hàng -->
-    <div id="orderDetailModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Chi tiết Đơn hàng <span id="modalOrderId"></span></h2>
-            <div id="modalOrderInfo" class="modal-info-section"></div>
-            
-            <h3 class="modal-detail-title">Sản phẩm đã đặt</h3>
-            <table class="modal-detail-table">
-                <thead>
-                    <tr>
-                        <th>Sản phẩm</th>
-                        <th>Đơn giá</th>
-                        <th>Số lượng</th>
-                        <th>Thành tiền</th>
-                    </tr>
-                </thead>
-                <tbody id="modalOrderDetailsBody">
-                </tbody>
-            </table>
+    <!-- Modal chi tiết đơn hàng -->
+<div id="orderDetailModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+
+        <h2>Chi tiết Đơn hàng <span id="modalOrderId"></span></h2>
+
+        <!-- Thông tin đơn hàng (khách, địa chỉ, tổng giá trị) -->
+        <div id="modalOrderInfo" class="modal-order-info">
+            <!-- JS sẽ đổ:
+                 Khách: ...
+                 Địa chỉ: ...
+                 Tổng giá trị: ... -->
         </div>
     </div>
+</div>
+
 
     <!-- Scripts -->
     <script src="../js/services/authService.js"></script>
