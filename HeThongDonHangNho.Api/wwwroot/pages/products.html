@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Sản phẩm - Admin</title>
+    <link rel="stylesheet" href="../css/product.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="admin-wrapper">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <img src="../img/images.png" alt="Mãi Xinh" class="sidebar-logo">
+                <div class="logo-text">Dashboard</div>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="../index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+               
+                <li class="active"><a href="products.html"><i class="fas fa-box-open"></i> Quản lý sản phẩm</a></li>
+                <li><a href="order.html"><i class="fas fa-users"></i> Quản lý tạo đơn hàng</a></li>
+                <li><a href="orders.html"><i class="fas fa-chart-line"></i> Danh sách Đơn hàng</a></li>
+                <li><a href="login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content-wrapper">
+            <div class="header">
+                 <div class="breadcrumb">
+                    <a href="../index.html">Home</a> / <span class="current-page">Quản lý Sản phẩm</span>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span class="user-name">Admin</span>
+                        <img src="" alt="User Avatar" class="user-avatar">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="message" class="alert" style="display: none;"></div> 
+                
+                <div class="content-header">
+                    <h2>Danh sách Sản phẩm</h2> 
+                    <button id="addProductBtn" class="btn-primary-admin">
+                        <i class="fas fa-plus"></i> Thêm Sản phẩm mới 
+                    </button>
+                </div>
+
+                <div id="productFormContainer" class="form-card" style="display: none;">
+                    <h3><span id="formTitle">Thêm</span> Sản phẩm</h3>
+                    <form id="productForm">
+                        <input type="hidden" id="productId" name="id">
+                        
+                        <div class="form-group">
+                            <label for="productName">Tên sản phẩm:</label>
+                            <input type="text" id="productName" name="name" required> 
+                        </div>
+                        <div class="form-group">
+                            <label for="productPrice">Giá:</label>
+                             <input type="number" id="productPrice" name="price" required min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="productDescription">Mô tả:</label>
+                             <textarea id="productDescription" name="description"></textarea>
+                        </div>
+                        <div class="form-actions">
+                             <button type="submit" class="btn-primary-admin" id="saveProductBtn">Lưu</button>
+                            <button type="button" class="btn-secondary" id="cancelButton" onclick="document.getElementById('productFormContainer').style.display='none'">Hủy</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-card">
+                    <table id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Giá</th>
+                                <th>Mô tả</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <tr><td colspan="5"></td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="pagination">
+                        <a href="#" class="active">1</a>
+                        <a href="#">2</a>
+                        <a href="#">3</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/services/authService.js"></script>
+    <script src="../js/services/productService.js"></script>
+    <script src="../js/products.js"></script> 
+</body>
+</html>

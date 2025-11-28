@@ -17,13 +17,12 @@ namespace HeThongDonHangNho.Api.DTOs.auth
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu phải từ 6 ký tự trở lên.")]
         public string Password { get; set; } = string.Empty;
 
-        // Nếu không muốn user tự set Admin thì có thể bỏ hẳn property này,
-        // hoặc ép mặc định thành "User" rồi không bind từ client.
+        // Cho phép Admin hoặc User
         [Required]
         [RegularExpression("Admin|User", ErrorMessage = "Role phải là 'Admin' hoặc 'User'.")]
         public string Role { get; set; } = "User";
 
-        // Nếu có gắn với Customer
+        // Nếu là User có thể gắn với CustomerId
         public int? CustomerId { get; set; }
     }
 }
