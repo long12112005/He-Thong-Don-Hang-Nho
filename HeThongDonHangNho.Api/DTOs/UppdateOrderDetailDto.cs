@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HeThongDonHangNho.Api.DTOs
 {
+    /// <summary>
+    /// Dùng để cập nhật chi tiết đơn hàng (sản phẩm + số lượng).
+    /// </summary>
     public class OrderDetailUpdateDto
     {
         [Required]
@@ -15,8 +18,5 @@ namespace HeThongDonHangNho.Api.DTOs
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "Số lượng phải > 0")]
         public int Quantity { get; set; }
-
-        [Range(0, double.MaxValue, ErrorMessage = "Đơn giá phải >= 0")]
-        public decimal UnitPrice { get; set; }
     }
 }

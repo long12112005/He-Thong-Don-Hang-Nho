@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HeThongDonHangNho.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251125080922_AddEmailToCustomer")]
-    partial class AddEmailToCustomer
+    [Migration("20251128090306_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,18 +63,11 @@ namespace HeThongDonHangNho.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<int>("CustomerId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("ShippingAddress")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -83,12 +76,6 @@ namespace HeThongDonHangNho.Api.Migrations
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -191,11 +178,13 @@ namespace HeThongDonHangNho.Api.Migrations
 
             modelBuilder.Entity("HeThongDonHangNho.Api.Models.Order", b =>
                 {
-                    b.HasOne("HeThongDonHangNho.Api.Models.Customer", null)
-                        .WithMany()
+                    b.HasOne("HeThongDonHangNho.Api.Models.Customer", "Customer")
+                        .WithMany("Orders")
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("HeThongDonHangNho.Api.Models.OrderDetail", b =>
@@ -222,6 +211,11 @@ namespace HeThongDonHangNho.Api.Migrations
                         .HasForeignKey("CustomerId");
 
                     b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("HeThongDonHangNho.Api.Models.Customer", b =>
+                {
+                    b.Navigation("Orders");
                 });
 
             modelBuilder.Entity("HeThongDonHangNho.Api.Models.Order", b =>

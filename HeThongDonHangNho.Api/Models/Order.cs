@@ -3,19 +3,26 @@ using System.Collections.Generic;
 
 namespace HeThongDonHangNho.Api.Models
 {
+    
     public class Order
     {
+        // Khóa chính đơn hàng
         public int Id { get; set; }
+
+        // Khóa ngoại tới khách hàng đặt đơn
         public int CustomerId { get; set; }
-        public int? UserId { get; set; }
+
+        // Ngày tạo đơn hàng
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
-        public decimal TotalAmount { get; set; }
+
+        // Trạng thái đơn (Pending, Completed, Cancelled, ...)
         public string Status { get; set; } = "Pending";
-        public string ShippingAddress { get; set; } = string.Empty;
 
+        // Tổng tiền của đơn hàng
+        public decimal TotalAmount { get; set; }
+
+        // Navigation properties (phục vụ ORM, không phải field nghiệp vụ thêm)
+        public Customer Customer { get; set; } = null!;
         public List<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime? UpdatedAt { get; set; }
     }
 }

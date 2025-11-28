@@ -1,8 +1,10 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace HeThongDonHangNho.Api.DTOs
 {
+    /// <summary>
+    /// Dùng để cập nhật trạng thái đơn hàng.
+    /// </summary>
     public class OrderUpdateDto
     {
         [Required]
@@ -12,9 +14,5 @@ namespace HeThongDonHangNho.Api.DTOs
         [Required]
         [StringLength(50, ErrorMessage = "Trạng thái tối đa 50 ký tự")]
         public string Status { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(500, ErrorMessage = "Địa chỉ giao hàng tối đa 500 ký tự")]
-        public string ShippingAddress { get; set; } = string.Empty;
     }
 }

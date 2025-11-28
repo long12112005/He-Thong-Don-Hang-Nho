@@ -1,16 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using HeThongDonHangNho.Api.Data;
+using HeThongDonHangNho.Api.DTOs;
 using HeThongDonHangNho.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using HeThongDonHangNho.Api.DTOs;
 
 namespace HeThongDonHangNho.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // tất cả API order yêu cầu đăng nhập
+    [Authorize] // Yêu cầu phải đăng nhập cho toàn bộ Order API
     public class OrdersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -20,15 +24,27 @@ namespace HeThongDonHangNho.Api.Controllers
             _context = context;
         }
 
-        private int GetCurrentUserId()
+        private string? GetCurrentRole()
         {
-            var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.Parse(id);
+            return User.FindFirstValue(ClaimTypes.Role);
         }
 
-        private bool IsAdmin => User.IsInRole("Admin");
+        /// <summary>
+        /// Lấy CustomerId gắn với tài khoản đang đăng nhập (từ JWT claim "customerId").
+        /// </summary>
+        private int? GetCurrentCustomerId()
+        {
+            var claim = User.FindFirst("customerId")?.Value;
+            if (int.TryParse(claim, out var customerId))
+            {
+                return customerId;
+            }
+            return null;
+        }
 
-        // ================== LẤY DANH SÁCH ORDER (ADMIN) ==================
+        private bool IsAdmin => string.Equals(GetCurrentRole(), "Admin", StringComparison.OrdinalIgnoreCase);
+
+        // ================== LẤY TẤT CẢ ĐƠN HÀNG (ADMIN) ==================
         // GET: api/orders
         [HttpGet]
         [Authorize(Roles = "Admin")]
@@ -38,30 +54,34 @@ namespace HeThongDonHangNho.Api.Controllers
                 .Include(o => o.OrderDetails)
                 .ToListAsync();
 
-            var result = orders.Select(ToOrderDto).ToList();
+            var result = orders.Select(MapToOrderDto).ToList();
             return Ok(result);
         }
 
-        // ================== LẤY ĐƠN CỦA CHÍNH USER ==================
+        // ================== LẤY CÁC ĐƠN HÀNG CỦA CHÍNH USER ==================
         // GET: api/orders/my
         [HttpGet("my")]
         [Authorize(Roles = "User")]
         public async Task<ActionResult<IEnumerable<OrderDto>>> GetMyOrders()
         {
-            var currentUserId = GetCurrentUserId();
+            var customerId = GetCurrentCustomerId();
+            if (customerId == null)
+            {
+                return BadRequest(new { message = "Tài khoản hiện tại chưa được gán với khách hàng (CustomerId)." });
+            }
 
             var orders = await _context.Orders
                 .Include(o => o.OrderDetails)
-                .Where(o => o.UserId == currentUserId)
+                .Where(o => o.CustomerId == customerId.Value)
                 .ToListAsync();
 
-            var result = orders.Select(ToOrderDto).ToList();
+            var result = orders.Select(MapToOrderDto).ToList();
             return Ok(result);
         }
 
-        // ================== LẤY CHI TIẾT MỘT ORDER ==================
+        // ================== LẤY 1 ĐƠN HÀNG THEO ID ==================
+        // Admin xem được tất cả; User chỉ xem đơn của chính mình
         // GET: api/orders/5
-        // Admin xem được tất cả, User chỉ xem được đơn của mình
         [HttpGet("{id:int}")]
         public async Task<ActionResult<OrderDto>> GetById(int id)
         {
@@ -74,21 +94,22 @@ namespace HeThongDonHangNho.Api.Controllers
 
             if (!IsAdmin)
             {
-                var currentUserId = GetCurrentUserId();
-
-                if (order.UserId != currentUserId)
-                    return Forbid(); // User cố xem đơn của người khác
+                var customerId = GetCurrentCustomerId();
+                if (customerId == null || order.CustomerId != customerId.Value)
+                    return Forbid();
             }
 
-            var dto = ToOrderDto(order);
+            var dto = MapToOrderDto(order);
             return Ok(dto);
         }
 
         // ================== TẠO ĐƠN HÀNG MỚI ==================
+        // Admin & User đều có thể tạo:
+        // - User: luôn tạo đơn cho chính mình (CustomerId từ claim)
+        // - Admin: tạo đơn cho khách bất kỳ (CustomerId từ body)
         // POST: api/orders
-        // Admin & User đều tạo đơn được, nhưng User chỉ tạo cho chính mình
         [HttpPost]
-        public async Task<ActionResult<OrderDto>> Create([FromBody] OrderCreateDto dto)
+        public async Task<ActionResult<OrderDto>> Create([FromBody] CreateOrderDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -96,32 +117,47 @@ namespace HeThongDonHangNho.Api.Controllers
             if (dto.OrderDetails == null || !dto.OrderDetails.Any())
                 return BadRequest(new { message = "Đơn hàng phải có ít nhất 1 sản phẩm." });
 
-            var currentUserId = GetCurrentUserId();
-            var role = User.FindFirstValue(ClaimTypes.Role);
+            var role = GetCurrentRole();
+            int customerId;
 
-            int? userIdForOrder = role == "User" ? currentUserId : null;
-
-            // Nếu m có link User -> Customer, chỗ này có thể check CustomerId có thuộc User hay không
-            if (role == "User")
+            if (string.Equals(role, "User", StringComparison.OrdinalIgnoreCase))
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == currentUserId);
-                if (user == null || user.CustomerId == null || user.CustomerId != dto.CustomerId)
-                {
-                    return Forbid();
-                }
+                var currentCustomerId = GetCurrentCustomerId();
+                if (currentCustomerId == null)
+                    return BadRequest(new { message = "User chưa được gán CustomerId, không thể tạo đơn." });
+
+                customerId = currentCustomerId.Value;
+            }
+            else if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                if (dto.CustomerId == null || dto.CustomerId <= 0)
+                    return BadRequest(new { message = "CustomerId phải > 0." });
+
+                var exists = await _context.Customers.AnyAsync(c => c.Id == dto.CustomerId.Value);
+                if (!exists)
+                    return BadRequest(new { message = "Khách hàng không tồn tại." });
+
+                customerId = dto.CustomerId.Value;
+            }
+            else
+            {
+                return Forbid();
             }
 
-            // Chuẩn bị OrderDetails: lấy giá từ Product trong DB
+            // Chuẩn bị danh sách chi tiết đơn, lấy UnitPrice từ Product.Price
             var orderDetails = new List<OrderDetail>();
 
             foreach (var item in dto.OrderDetails)
             {
                 if (item.Quantity <= 0)
-                    return BadRequest(new { message = "Số lượng phải > 0." });
+                    return BadRequest(new { message = "Số lượng mỗi sản phẩm phải > 0." });
 
                 var product = await _context.Products.FindAsync(item.ProductId);
                 if (product == null)
                     return BadRequest(new { message = $"Sản phẩm {item.ProductId} không tồn tại." });
+
+                if (product.Price < 0)
+                    return BadRequest(new { message = "Giá sản phẩm phải >= 0." });
 
                 var detail = new OrderDetail
                 {
@@ -135,28 +171,24 @@ namespace HeThongDonHangNho.Api.Controllers
 
             var order = new Order
             {
-                CustomerId = dto.CustomerId,
-                ShippingAddress = dto.ShippingAddress ?? string.Empty,
-                Status = "Pending",
+                CustomerId = customerId,
                 OrderDate = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = null,
-                UserId = userIdForOrder,
+                Status = "Pending",
                 OrderDetails = orderDetails
             };
 
-            order.TotalAmount = order.OrderDetails.Sum(od => od.Quantity * od.UnitPrice);
+            // Tính tổng tiền
+            order.TotalAmount = order.OrderDetails.Sum(d => d.Quantity * d.UnitPrice);
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            var result = ToOrderDto(order);
-
+            var result = MapToOrderDto(order);
             return CreatedAtAction(nameof(GetById), new { id = order.Id }, result);
         }
 
-        // ================== CẬP NHẬT ĐƠN HÀNG ==================
-        // Chỉ Admin được update (ví dụ đổi trạng thái, địa chỉ...)
+        // ================== CẬP NHẬT ĐƠN HÀNG (ADMIN) ==================
+        // Ở đây chỉ cho phép cập nhật Status cho đơn hàng.
         // PUT: api/orders/5
         [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
@@ -168,27 +200,17 @@ namespace HeThongDonHangNho.Api.Controllers
             if (id != dto.Id)
                 return BadRequest(new { message = "Id không khớp." });
 
-            var order = await _context.Orders
-                .Include(o => o.OrderDetails)
-                .FirstOrDefaultAsync(o => o.Id == id);
-
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
             if (order == null)
                 return NotFound();
 
             order.Status = dto.Status;
-            order.ShippingAddress = dto.ShippingAddress ?? order.ShippingAddress;
-            order.UpdatedAt = DateTime.UtcNow;
-
-            // Tính lại tổng tiền từ chi tiết (an toàn hơn là tin client)
-            order.TotalAmount = order.OrderDetails.Sum(od => od.Quantity * od.UnitPrice);
 
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
-        // ================== XÓA ĐƠN HÀNG ==================
-        // Chỉ Admin được xóa
+        // ================== XÓA ĐƠN HÀNG (ADMIN) ==================
         // DELETE: api/orders/5
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin")]
@@ -201,28 +223,23 @@ namespace HeThongDonHangNho.Api.Controllers
             if (order == null)
                 return NotFound();
 
-            // Xóa chi tiết trước cho chắc (nếu không dùng cascade)
             _context.OrderDetails.RemoveRange(order.OrderDetails);
             _context.Orders.Remove(order);
-
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        // ================== MAPPING HELPER ==================
-
-        private static OrderDto ToOrderDto(Order o)
+        // ================== HÀM MAP ENTITY -> DTO ==================
+        private static OrderDto MapToOrderDto(Order o)
         {
             return new OrderDto
             {
                 Id = o.Id,
                 CustomerId = o.CustomerId,
+                OrderDate = o.OrderDate,
                 Status = o.Status,
-                ShippingAddress = o.ShippingAddress,
                 TotalAmount = o.TotalAmount,
-                CreatedAt = o.CreatedAt,
-                UpdatedAt = o.UpdatedAt,
                 OrderDetails = o.OrderDetails?
                     .Select(d => new OrderDetailDto
                     {

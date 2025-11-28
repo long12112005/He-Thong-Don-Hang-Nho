@@ -3,18 +3,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HeThongDonHangNho.Api.DTOs
 {
-    public class OrderCreateDto
+    /// <summary>
+    /// Dùng khi tạo mới đơn hàng.
+    /// - Admin: bắt buộc truyền CustomerId hợp lệ.
+    /// - User: có thể bỏ trống, backend sẽ lấy CustomerId gắn với tài khoản.
+    /// </summary>
+    public class CreateOrderDto
     {
-        [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "CustomerId phải > 0")]
-        public int CustomerId { get; set; }
-
-        [Required]
-        [StringLength(500, ErrorMessage = "Địa chỉ giao hàng tối đa 500 ký tự")]
-        public string ShippingAddress { get; set; } = string.Empty;
+        public int? CustomerId { get; set; }
 
         [Required(ErrorMessage = "Đơn hàng phải có ít nhất 1 sản phẩm.")]
         [MinLength(1, ErrorMessage = "Đơn hàng phải có ít nhất 1 sản phẩm.")]
-        public List<OrderDetailCreateDto> OrderDetails { get; set; } = new();
+        public List<CreateOrderDetailDto> OrderDetails { get; set; } = new();
     }
 }

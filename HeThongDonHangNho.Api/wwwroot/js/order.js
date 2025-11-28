@@ -134,15 +134,16 @@ document.addEventListener('DOMContentLoaded', () => {
             displayMessage('Giỏ hàng trống.', 'error'); return;
         }
 
-        const orderData = {
-            customerName: document.getElementById('customerName').value,
-            customerAddress: document.getElementById('customerAddress').value,
-            orderDetails: items.map(i => ({
-                productId: i.product.id,
-                quantity: i.quantity,
-                price: i.product.price
-            }))
-        };
+       const orderData = {
+    // KHÔNG cần customerId, backend tự lấy từ User
+    shippingAddress: document.getElementById('customerAddress').value,
+    orderDetails: items.map(i => ({
+        productId: i.product.id,
+        quantity: i.quantity
+        // price / unitPrice gửi cũng được nhưng backend không dùng
+    }))
+};
+
 
         createOrderBtn.disabled = true;
         createOrderBtn.textContent = 'Đang xử lý...';

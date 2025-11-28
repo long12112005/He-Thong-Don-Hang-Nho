@@ -18,7 +18,6 @@ namespace HeThongDonHangNho.Api.Data
         public DbSet<OrderDetail> OrderDetails { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
 
-
         // ============== CONFIG ==============
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -39,14 +38,15 @@ namespace HeThongDonHangNho.Api.Data
                 .HasColumnType("decimal(18,2)");
 
             // -------- QUAN HỆ ORDER - CUSTOMER --------
-            // Order có CustomerId, nhưng Customer không có navigation Orders
+            // 1 Customer có nhiều Order, Order có CustomerId
             modelBuilder.Entity<Order>()
-                .HasOne<Customer>()                  // không có property navigation trong Order
-                .WithMany()                          // không có ICollection<Order> trong Customer
-                .HasForeignKey(o => o.CustomerId)
+                .HasOne(o => o.Customer)          // sử dụng navigation Order.Customer
+                .WithMany(c => c.Orders)          // dùng navigation Customer.Orders
+                .HasForeignKey(o => o.CustomerId) // FK: CustomerId
                 .OnDelete(DeleteBehavior.Restrict);
 
             // -------- QUAN HỆ ORDERDETAIL - ORDER --------
+            // 1 Order có nhiều OrderDetail
             modelBuilder.Entity<OrderDetail>()
                 .HasOne(od => od.Order)
                 .WithMany(o => o.OrderDetails)
@@ -54,10 +54,10 @@ namespace HeThongDonHangNho.Api.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // -------- QUAN HỆ ORDERDETAIL - PRODUCT --------
-            // Chỉ có ProductId, không có navigation Product trong OrderDetail
+            // Mỗi OrderDetail trỏ tới 1 Product (không cần navigation ngược lại)
             modelBuilder.Entity<OrderDetail>()
-                .HasOne<Product>()                   // không có OrderDetail.Product
-                .WithMany()                          // không có Product.OrderDetails
+                .HasOne<Product>()                   // không cần OrderDetail.Product
+                .WithMany()                          // không cần Product.OrderDetails
                 .HasForeignKey(od => od.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
 

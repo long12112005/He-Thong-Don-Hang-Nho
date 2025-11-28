@@ -1,18 +1,25 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace HeThongDonHangNho.Api.Models
 {
+   
+    public class OrderDetail
+    {
+        // Khóa chính cho từng dòng chi tiết
+        public int Id { get; set; }
 
-public class OrderDetail {
-public int Id { get; set; }
-public int OrderId { get; set; }
-public Order Order { get; set; } = null!;
-public int ProductId { get; set; }
-public int Quantity { get; set; }
-public decimal UnitPrice { get; set; }
-public decimal LineTotal => Quantity * UnitPrice;
-}
+        // Mã đơn hàng (FK)
+        public int OrderId { get; set; }
+
+        public Order Order { get; set; } = null!;
+
+        // Mã sản phẩm (FK)
+        public int ProductId { get; set; }
+
+        // Số lượng sản phẩm trong đơn hàng
+        public int Quantity { get; set; }
+
+        // Đơn giá tại thời điểm đặt hàng
+        public decimal UnitPrice { get; set; }
+    }
 }
