@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using HeThongDonHangNho.Api.DTOs.auth;
-using HeThongDonHangNhot.Api.DTOs.auth;
-// ⚠ BỎ using sai này đi: using HeThongDonHangNhot.Api.DTOs.auth;
 
 namespace HeThongDonHangNho.Api.Controllers
 {

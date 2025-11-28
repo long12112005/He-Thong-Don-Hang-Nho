@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace HeThongDonHangNhot.Api.DTOs.auth
+namespace HeThongDonHangNho.Api.DTOs.auth
 {
     public class LoginRequestDto
     {

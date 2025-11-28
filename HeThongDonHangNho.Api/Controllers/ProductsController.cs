@@ -9,7 +9,7 @@ namespace HeThongDonHangNho.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] 
+    [Authorize(Roles = "Admin")]  
     public class ProductsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -22,7 +22,8 @@ namespace HeThongDonHangNho.Api.Controllers
         // ================== GET: api/products ==================
         // Cho phép ai cũng xem danh sách sản phẩm
         [HttpGet]
-        [AllowAnonymous] // 👈 bỏ qua [Authorize] ở trên, không cần token
+        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]  
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetAll()
         {
             var products = await _context.Products
@@ -34,8 +35,7 @@ namespace HeThongDonHangNho.Api.Controllers
             return Ok(result);
         }
 
-        // ================== GET: api/products/5 ==================
-        // Cho phép ai cũng xem chi tiết 1 sản phẩm
+       
         [HttpGet("{id:int}")]
         [AllowAnonymous]
         public async Task<ActionResult<ProductDto>> GetById(int id)
