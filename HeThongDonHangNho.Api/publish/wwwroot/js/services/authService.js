@@ -5,8 +5,7 @@
 
 // Base URL chung cho mọi service, ví dụ: http://localhost:5161/api
 
-window.API_BASE_URL = "http://localhost:8080/api";
-
+const API_BASE_URL = window.location.origin + '/api';
 
 const AUTH_KEYS = {
     TOKEN: 'authToken',
