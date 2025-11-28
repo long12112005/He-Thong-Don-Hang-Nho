@@ -84,15 +84,17 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// 🔥 Bật Swagger cho mọi môi trường (Dev + IIS)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "HeThongDonHangNho API v1");
+    // c.RoutePrefix = string.Empty; // mở dòng này nếu muốn swagger nằm ở "/"
+});
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles(); 
+app.UseStaticFiles();
 
 app.UseCors("AllowFrontend");
 

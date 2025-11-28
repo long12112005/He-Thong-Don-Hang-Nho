@@ -1,0 +1,229 @@
+/* ======================================================
+   TABLE CARD (Danh sách Sản phẩm / Đơn hàng)
+====================================================== */
+.table-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    margin-top: 20px;
+    overflow-x: auto;
+}
+
+.table-card table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.table-card thead th {
+    background: #f5f6fa;
+    color: #333;
+    padding: 12px 15px;
+    font-weight: 600;
+    border-bottom: 2px solid #e6e6e6;
+}
+
+.table-card tbody td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.table-card tbody tr:hover {
+    background: #f1f1f1;
+}
+
+/* Nút thao tác */
+.btn-detail, .btn-edit, .btn-delete {
+    padding: 7px 12px;
+    border-radius: 5px;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: 0.25s;
+    font-size: 0.85rem;
+}
+
+.btn-detail { background: #007bff; }
+.btn-detail:hover { background: #0056b3; }
+
+.btn-edit { background: #17a2b8; }
+.btn-edit:hover { background: #117a8b; }
+
+.btn-delete { background: #dc3545; }
+.btn-delete:hover { background: #b52a36; }
+
+/* Status badge */
+.badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.badge-new, .badge-pending { background: #ffc107; color: #333; }
+.badge-completed, .badge-shipped { background: #28a745; color: #fff; }
+.badge-cancelled, .badge-failed { background: #dc3545; color: #fff; }
+
+/* ======================================================
+   MODAL
+====================================================== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 1100;
+}
+
+.modal-content {
+    background: #fff;
+    margin: 4% auto;
+    width: 85%;
+    max-width: 780px;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.close-btn {
+    float: right;
+    font-size: 26px;
+    cursor: pointer;
+    color: #888;
+}
+.close-btn:hover { color: #000; }
+
+.modal-info-section {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-detail-title {
+    font-size: 1.2rem;
+    color: #007bff;
+    font-weight: bold;
+    margin-top: 15px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #007bff;
+}
+
+.modal-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.modal-detail-table th,
+.modal-detail-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.total-amount-value {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* ======================================================
+   SIDEBAR ADMIN
+====================================================== */
+.sidebar {
+    width: 250px;
+    background: #fff;
+    border-right: 1px solid #e0e0e0;
+    height: 100vh;
+    position: fixed;
+    padding-top: 20px;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.logo-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.sidebar-menu { list-style: none; padding: 0; margin-top: 20px; }
+.sidebar-menu li { margin-bottom: 5px; }
+
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: #333;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.sidebar-menu a:hover,
+.sidebar-menu .active a {
+    background: #007bff;
+    color: #fff;
+}
+
+.sidebar-menu i {
+    margin-right: 10px;
+}
+
+/* ======================================================
+   MAIN CONTENT
+====================================================== */
+.main-content-wrapper {
+    margin-left: 250px;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.breadcrumb a {
+    color: #007bff;
+    text-decoration: none;
+    margin-right: 6px;
+}
+
+.breadcrumb .current-page {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+    .main-content-wrapper {
+        margin-left: 0;
+    }
+}
+.order-items-list {
+    margin-top: 4px;
+    margin-left: 20px;
+}
+
+.order-items-list li {
+    margin-bottom: 2px;
+}
