@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let total = 0;
 
         keys.forEach(id => {
+            
             const item = cart[id];
             total += item.totalPrice;
             cartItemsElement.innerHTML += `
@@ -133,17 +134,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!items.length) {
             displayMessage('Giỏ hàng trống.', 'error'); return;
         }
-
-       const orderData = {
-    // KHÔNG cần customerId, backend tự lấy từ User
-    shippingAddress: document.getElementById('customerAddress').value,
-    orderDetails: items.map(i => ({
-        productId: i.product.id,
-        quantity: i.quantity
-        // price / unitPrice gửi cũng được nhưng backend không dùng
-    }))
-};
-
+       
+        const user = AuthService.getUser(); // Giả sử user có { customerId, name, role }
+        
+        const customerId = AuthService.getCustomerId();
+         if (!user || !user.customerId) {
+        displayMessage('Không tìm thấy ID khách hàng. Vui lòng đăng nhập lại.', 'error');
+        return;
+    }
+        if (!customerId) {
+            displayMessage('Lỗi: Không tìm thấy ID khách hàng.', 'error');
+            return;
+        }
+         let calculatedTotal = 0;
+        items.forEach(item => {
+            calculatedTotal += item.totalPrice;
+        });
+        const orderData = {
+            customerId: customerId,
+            customerName: document.getElementById('customerName').value,
+    // Phải là 'shippingAddress' thay vì 'customerAddress' nếu backend yêu cầu
+             shippingAddress: document.getElementById('customerAddress').value, 
+            status: 'New',
+            totalAmount: calculatedTotal,
+            // 🚨 SỬA LỖI 400 QUAN TRỌNG: THÊM CustomerId
+            customerId: customerId,
+            orderDetails: items.map(i => ({
+            productId: i.product.id,
+            quantity: i.quantity,
+                price: i.product.price // Đơn giá (Unit Price)
+            }))
+        };
 
         createOrderBtn.disabled = true;
         createOrderBtn.textContent = 'Đang xử lý...';
