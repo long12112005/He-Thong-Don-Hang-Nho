@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo Đơn hàng - Admin</title>
+    <link rel="stylesheet" href="../css/order.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <img src="../img/images.png" alt="Mãi Xinh" class="sidebar-logo">
+                <div class="logo-text">Dashboard</div>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="../index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="products.html"><i class="fas fa-box-open"></i> Quản lý sản phẩm</a></li>
+                <li class="active"><a href="order.html"><i class="fas fa-shopping-cart"></i> Tạo Đơn hàng</a></li>
+                <li><a href="orders.html"><i class="fas fa-chart-line"></i> Danh sách Đơn hàng</a></li>
+                <li><a href="../login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</a></li>
+            </ul>
+        </div>
+
+        <!-- Main content -->
+        <div class="main-content-wrapper">
+            <div class="header">
+                <div class="breadcrumb">
+                    <a href="../index.html">Home</a> / <span class="current-page">Tạo Đơn hàng</span>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span class="user-name">Admin</span>
+                        <img src="" alt="User Avatar" class="user-avatar">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div id="message" class="alert" style="display: none;"></div>
+
+                <div class="order-layout">
+                    <!-- Chọn sản phẩm -->
+                    <div class="product-selection-card card">
+                        <h2 class="card-title-bordered">Chọn Sản phẩm</h2>
+                        <div id="productList" class="product-grid">
+                            <p id="loadingMsg" class="loading-message">Đang tải danh sách sản phẩm...</p>
+                        </div>
+                    </div>
+
+                    <!-- Giỏ hàng + thông tin khách -->
+                    <div class="cart-summary-card card">
+                        <h2 class="card-title-bordered">Thông tin Đơn hàng</h2>
+                        <div id="emptyCartMsg" style="display: none; color: gray; text-align: center; padding: 10px;">
+    Giỏ hàng đang trống. Vui lòng chọn sản phẩm.
+</div>
+                        <form id="orderForm">
+                            <div class="cart-items" id="cartItems">
+                                <p id="emptyCartMsg" class="empty-cart-message">
+                                    Giỏ hàng trống. Vui lòng chọn sản phẩm.
+                                </p>
+                            </div>
+
+                            <hr class="divider">
+
+                            <div class="form-group">
+                                <label for="customerName">Tên Khách hàng:</label>
+                                <input type="text" id="customerName" required placeholder="Nhập tên người nhận">
+                            </div>
+                            <div class="form-group">
+                                <label for="customerAddress">Địa chỉ:</label>
+                                <input type="text" id="customerAddress" required placeholder="Nhập địa chỉ nhận hàng">
+                            </div>
+
+                            <hr class="divider">
+
+                            <div class="order-total">
+                                <strong>Tổng tiền tạm tính (FE):</strong>
+                                <span id="totalAmount" class="total-amount-value">0 VNĐ</span>
+                            </div>
+
+                            <!-- BỎ disabled CỨNG Ở ĐÂY -->
+                            <button type="submit" id="createOrderBtn" class="btn-primary-custom">
+                                Tạo Đơn hàng
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/services/authService.js"></script>
+    <script src="../js/services/productService.js"></script>
+    <script src="../js/services/orderService.js"></script>
+    <script src="../js/order.js"></script>
+
+</body>
+</html>
