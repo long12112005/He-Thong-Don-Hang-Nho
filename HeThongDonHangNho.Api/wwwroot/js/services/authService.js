@@ -9,7 +9,8 @@ const API_BASE_URL = window.location.origin + '/api';
 const AUTH_KEYS = {
     TOKEN: 'authToken',
     USER_NAME: 'authUserName',
-    USER_ROLE: 'authUserRole'
+    USER_ROLE: 'authUserRole',
+    CUSTOMER_ID: 'authCustomerId'
 };
 
 const AuthService = {
@@ -20,6 +21,7 @@ const AuthService = {
      */
     async login(username, password) {
         const url = `${API_BASE_URL}/Auth/login`;
+        
 
         try {
             const response = await fetch(url, {
@@ -41,12 +43,12 @@ const AuthService = {
             if (!token) {
                 throw new Error('API không trả về token.');
             }
-
+            
             // Lưu token + info cơ bản
             this.saveToken(token);
             if (data.name) localStorage.setItem(AUTH_KEYS.USER_NAME, data.name);
             if (data.role) localStorage.setItem(AUTH_KEYS.USER_ROLE, data.role);
-
+            if (data.customerId) localStorage.setItem(AUTH_KEYS.CUSTOMER_ID, data.customerId);
             return data;
         } catch (error) {
             console.error('Lỗi khi gọi API đăng nhập:', error);
@@ -76,16 +78,23 @@ const AuthService = {
     isLoggedIn() {
         return !!this.getToken();
     },
+    getCustomerId() {
+        const id = localStorage.getItem(AUTH_KEYS.CUSTOMER_ID);
+        // Chuyển về số nguyên, nếu không có thì trả về null
+        return id ? parseInt(id, 10) : null; 
+    },
 
+    // 💡 CẬP NHẬT: getUser() phải trả về CustomerId
     getUser() {
         const name = this.getUserName();
         const role = this.getUserRole();
+        const customerId = this.getCustomerId(); // Lấy CustomerId
 
         if (!name && !role) return null;
-        return { name, role };
+        return { name, role, customerId }; // Trả về cả CustomerId
     },
 
-    // Đăng xuất
+    // 💡 CẬP NHẬT: Xóa CustomerId khi logout
     logout() {
         localStorage.removeItem(AUTH_KEYS.TOKEN);
         localStorage.removeItem(AUTH_KEYS.USER_NAME);

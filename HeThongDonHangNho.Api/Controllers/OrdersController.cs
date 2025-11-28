@@ -100,16 +100,27 @@ namespace HeThongDonHangNho.Api.Controllers
             var role = User.FindFirstValue(ClaimTypes.Role);
 
             int? userIdForOrder = role == "User" ? currentUserId : null;
-
+            int customerIdForOrder;
             // Nếu m có link User -> Customer, chỗ này có thể check CustomerId có thuộc User hay không
             if (role == "User")
             {
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == currentUserId);
                 if (user == null || user.CustomerId == null || user.CustomerId != dto.CustomerId)
                 {
-                    return Forbid();
+                   return Forbid(new { message = "Người dùng chưa liên kết với Khách hàng." });
                 }
+                customerIdForOrder = user.CustomerId.Value;
             }
+            else 
+                {
+                    // Admin: Cho phép Admin tạo đơn cho bất kỳ khách hàng nào, yêu cầu FE gửi CustomerId
+                    if (!dto.CustomerId.HasValue) 
+                    {
+                         return BadRequest(new { message = "Admin phải chỉ định CustomerId." });
+                    }
+                    customerIdForOrder = dto.CustomerId.Value;
+                }
+                
 
             // Chuẩn bị OrderDetails: lấy giá từ Product trong DB
             var orderDetails = new List<OrderDetail>();
