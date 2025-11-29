@@ -17,11 +17,11 @@ cd wwwroute
 
 ## 🔐 Tài khoản mẫu
 Admin:
-- email: admin@test.com
+- email: admin@gamil.com
 - password: 123456
 
 User:
-- email: user@test.com
+- email: user@gmail.com
 - password: 123456
 
 ## Giấy tờ báo cáo kèm theo
